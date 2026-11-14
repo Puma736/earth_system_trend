@@ -1,4 +1,11 @@
 .venv/
 __pycache__/
 *.py[cod]
+.pytest_cache/
 .env
+
+# Caché de respuestas de POWER (se regenera sola)
+.cache/
+
+# Respuestas crudas de FIRMS (pueden pesar mucho; solo se versiona el CSV agregado)
+data/firms_raw/
