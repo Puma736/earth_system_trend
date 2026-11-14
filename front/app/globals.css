@@ -1,8 +1,7 @@
 :root {
   color-scheme: dark;
-  background: #070b18;
-  color: #f4f6ff;
-  font-family: Arial, Helvetica, sans-serif;
+  background: #151722;
+  color: #a0a0a5;
 }
 
 * {
@@ -12,24 +11,245 @@
 body {
   margin: 0;
   min-height: 100vh;
+  background: #151722;
+  color: #a0a0a5;
 }
 
-main {
+.eyebrow {
+  margin: 0;
+  color: #cbd931;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.run-action {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: #39383a;
+  padding-top: 8px;
+}
+
+.panel-scroll {
+  max-height: calc(100vh - 104px);
+  overflow: auto;
+}
+
+.plot {
+  background: #151722;
+  border-radius: 8px;
+  padding: 8px 4px 0;
+  --chart-text-color: #a0a0a5;
+  --chart-grid-color: #39383a;
+}
+
+.plot-empty,
+.notice {
+  min-height: 180px;
   display: grid;
-  min-height: 100vh;
   align-content: center;
-  justify-items: center;
-  gap: 0.75rem;
-  padding: 2rem;
-  text-align: center;
+  padding: 16px;
+  background: #151722;
+  border-radius: 8px;
 }
 
-h1 {
-  margin: 0;
-  font-size: clamp(2.5rem, 8vw, 5rem);
+.notice {
+  border-left: 3px solid #cbd931;
+  min-height: 0;
 }
 
-p {
+.conclusion {
+  border-top: 1px solid #151722;
+  padding-top: 12px;
+}
+
+.finding {
+  color: #cbd931;
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: 1.12rem;
+  line-height: 1.45;
+}
+
+.geo-map-frame {
+  height: 420px;
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #151722;
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+}
+
+.geo-map.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #151722;
+  font-family: "Familjen Grotesk", "Segoe UI", sans-serif;
+}
+
+.geo-map .leaflet-control-attribution {
+  background: rgba(21, 23, 34, 0.92);
+  color: #a0a0a5;
+  font-size: 11px;
+  line-height: 1.35;
+  max-width: 78%;
+}
+
+.geo-map .leaflet-control-attribution a {
+  color: #cbd931;
+}
+
+.leaflet-div-icon.place-marker,
+.leaflet-div-icon.hotspot-marker {
+  background: transparent;
+  border: 0;
+}
+
+.place-marker span {
+  display: block;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #3d4b97;
+  box-shadow: inset 0 0 0 2px #cbd931;
+}
+
+.hotspot-marker span {
+  display: block;
+  width: 12px;
+  height: 12px;
+  margin: 1px;
+  background: #151722;
+  border: 2px solid #cbd931;
+  transform: rotate(45deg);
+}
+
+.cell-marker {
+  cursor: pointer;
+}
+
+.map-popup .leaflet-popup-content-wrapper,
+.map-popup .leaflet-popup-tip {
+  background: #39383a;
+  color: #a0a0a5;
+  box-shadow: none;
+}
+
+.map-popup .leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.map-popup .leaflet-popup-content {
+  margin: 10px 12px;
+  font-family: "Familjen Grotesk", "Segoe UI", sans-serif;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.map-popup-body p {
+  margin: 0 0 4px;
+}
+
+.map-popup-body p:last-child {
   margin: 0;
-  color: #b7c1df;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+}
+
+.map-readout,
+.search-note {
+  margin: 6px 0 0;
+  color: #a0a0a5;
+  font-size: 0.875rem;
+}
+
+.map-readout {
+  color: #cbd931;
+}
+
+.place-results {
+  display: grid;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.place-hit,
+.text-button {
+  font: inherit;
+  cursor: pointer;
+}
+
+.place-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: #151722;
+  color: #a0a0a5;
+  border: 1px solid #151722;
+  border-radius: 6px;
+  padding: 6px 8px;
+}
+
+.place-hit:hover,
+.place-hit:focus-visible,
+.text-button:focus-visible {
+  border-color: #cbd931;
+  color: #cbd931;
+  outline: none;
+}
+
+.text-button {
+  margin-top: 6px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #cbd931;
+  font-size: 0.82rem;
+}
+
+.swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 99px;
+  display: inline-block;
+}
+
+.swatch-high {
+  background: #cbd931;
+}
+
+.swatch-low {
+  background: #a0a0a5;
+}
+
+.swatch-hot {
+  border-radius: 2px;
+  background: #151722;
+  box-shadow: inset 0 0 0 2px #cbd931;
+  transform: rotate(45deg);
+}
+
+.swatch-place {
+  background: #3d4b97;
+  box-shadow: inset 0 0 0 2px #cbd931;
+}
+
+@media (max-width: 48em) {
+  .geo-map-frame {
+    height: 360px;
+  }
+}
+
+@media (max-width: 75em) {
+  .panel-scroll {
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
 }
