@@ -33,9 +33,28 @@ class SeasonOut(BaseModel):
     months: list[int]
 
 
+class YearRange(BaseModel):
+    start: int
+    end: int
+
+
+class YearsOut(BaseModel):
+    drought: YearRange = Field(description="Years accepted by /api/drought (MERRA-2 via NASA POWER)")
+    hotspots: YearRange = Field(description="Comparable years for /api/hotspots and /api/link (MODIS Terra + Aqua)")
+
+
+class IndicatorOut(BaseModel):
+    param: str
+    label: str
+    unit: str
+    definition: str
+
+
 class RegionsResponse(BaseModel):
     regions: list[RegionOut]
     seasons: list[SeasonOut]
+    years: YearsOut
+    indicators: list[IndicatorOut] = Field(description="The 6 drought indicators, in dashboard order")
 
 
 class YearValue(BaseModel):
@@ -58,11 +77,7 @@ class TrendOut(BaseModel):
     notes: list[str] = Field(default_factory=list, description="Warnings when the methods disagree")
 
 
-class DroughtIndicatorOut(BaseModel):
-    param: str
-    label: str
-    unit: str
-    definition: str
+class DroughtIndicatorOut(IndicatorOut):
     series: list[YearValue]
     trend: TrendOut | None
     points_to_drying: bool | None
@@ -98,12 +113,18 @@ class HotspotsResponse(BaseModel):
     verdict: Verdict
 
 
+class HotspotCell(BaseModel):
+    lat: float = Field(description="Latitude of the cell center")
+    lon: float = Field(description="Longitude of the cell center")
+    count: int
+
+
 class HotspotGridResponse(BaseModel):
     region: RegionOut
     season: SeasonOut
     year: int
     cell_deg: float
-    cells: list[dict]
+    cells: list[HotspotCell]
 
 
 class LinkPoint(BaseModel):
@@ -117,6 +138,7 @@ class LinkResponse(BaseModel):
     season: SeasonOut
     indicator: str
     indicator_label: str
+    indicator_unit: str
     points: list[LinkPoint]
     rho: float | None
     p_value: float | None

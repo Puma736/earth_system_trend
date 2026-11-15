@@ -2,22 +2,14 @@
 
 import { Skeleton } from "@mantine/core";
 import dynamic from "next/dynamic";
-import type { AdminFeature } from "@/lib/bolivia";
-import type { Hotspot, MapCell, MapFocus, PlaceRef } from "@/lib/types";
+import type { GeoMapProps } from "@/components/geo-map";
 
+// Leaflet necesita window: el mapa se carga solo en el navegador.
 const GeoMap = dynamic(() => import("@/components/geo-map").then((mod) => mod.GeoMap), {
   ssr: false,
   loading: () => <Skeleton height={420} radius="md" />,
 });
 
-export function TrendMap(props: {
-  cells: MapCell[] | null;
-  hotspots: Hotspot[];
-  caption: string;
-  province: AdminFeature | null;
-  department: AdminFeature | null;
-  place: PlaceRef | null;
-  focus: MapFocus;
-}) {
+export function TrendMap(props: GeoMapProps) {
   return <GeoMap {...props} />;
 }

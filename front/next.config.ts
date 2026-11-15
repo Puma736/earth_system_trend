@@ -23,7 +23,26 @@ function repairCrossDriveSpecifier(value: unknown): unknown {
   return value;
 }
 
+/**
+ * El navegador pide /api/* y /health a este mismo servidor y Next.js los reenvía al
+ * backend. Así, desde otra computadora de la red solo hace falta el puerto 3000, no
+ * importa la IP de esta máquina y el backend puede escuchar solo en 127.0.0.1.
+ * BACKEND_URL se lee al arrancar npm run dev (y en el build).
+ */
+const BACKEND_URL = (process.env.BACKEND_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+
 const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      { source: "/api/:path*", destination: `${BACKEND_URL}/api/:path*` },
+      { source: "/health", destination: `${BACKEND_URL}/health` },
+    ];
+  },
+  experimental: {
+    // La primera consulta de una región sin caché tarda hasta ~50 s (NASA POWER) y el
+    // proxy corta a los 30 s por defecto. Va por encima de los 120 s del cliente.
+    proxyTimeout: 130_000,
+  },
   webpack: (config) => {
     const current = config.entry as unknown;
     if (typeof current === "function") {

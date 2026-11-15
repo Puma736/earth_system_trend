@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 from app.data import firms, power
@@ -47,6 +49,18 @@ def test_yearly_counts_filters_region_and_months(firms_csv):
 def test_missing_csv_raises(tmp_path):
     with pytest.raises(DataNotAvailable):
         firms.load_cells(tmp_path / "nope.csv")
+
+
+def test_load_cells_is_cached_until_the_file_changes(firms_csv):
+    first = firms.load_cells(firms_csv)
+    assert firms.load_cells(firms_csv) is first
+
+    with firms_csv.open("a", newline="", encoding="utf-8") as fh:
+        fh.write("2004,8,-17.75,-61.25,1\n")
+    stat = firms_csv.stat()
+    os.utime(firms_csv, ns=(stat.st_atime_ns, stat.st_mtime_ns + 1_000_000_000))
+
+    assert len(firms.load_cells(firms_csv)) == len(first) + 1
 
 
 def test_bbox_contains():

@@ -1,158 +1,140 @@
-export type VariableId =
-  | "precipitation"
-  | "temperature"
-  | "ndvi"
-  | "soil_moisture"
-  | "wind";
+/**
+ * Contrato de la API. Es el espejo de backend/app/schemas.py y de docs/api.md:
+ * si cambia allí, cambia aquí.
+ */
 
-export type CaseId = "drought" | "fire" | "open";
+export type Verdict = "Real change" | "Not yet certain" | "Not enough data";
 
-export type Aggregation = "monthly" | "annual";
+export interface BBox {
+  west: number;
+  south: number;
+  east: number;
+  north: number;
+}
 
 export interface Region {
   id: string;
   name: string;
-  lat: number;
-  lon: number;
+  bbox: BBox;
+  note: string;
 }
 
-export interface VariableDef {
-  id: VariableId;
-  code: string;
+export interface Season {
+  id: string;
   name: string;
+  months: number[];
+}
+
+export interface YearRange {
+  start: number;
+  end: number;
+}
+
+export interface IndicatorInfo {
+  param: string;
+  label: string;
   unit: string;
   definition: string;
-  source: string;
 }
 
-export interface Question {
-  id: string;
-  text: string;
-}
-
-export interface CaseDef {
-  id: CaseId;
-  label: string;
-  variables: VariableId[];
-  questions: Question[];
-}
-
-export interface PlaceRef {
-  name: string;
-  lat: number;
-  lon: number;
-}
-
-export interface AdminRef {
-  id: string;
-  name: string;
-  level: "department" | "province";
-  department_id: string;
-  lat: number;
-  lon: number;
-}
-
-export type MapFocus =
-  | { kind: "bolivia" }
-  | { kind: "department"; id: string }
-  | { kind: "province"; id: string }
-  | { kind: "place"; name: string; lat: number; lon: number };
-
+/** GET /api/regions */
 export interface Catalog {
   regions: Region[];
-  variables: VariableDef[];
-  cases: CaseDef[];
-  departments?: AdminRef[];
-  provinces?: AdminRef[];
+  seasons: Season[];
+  years: { drought: YearRange; hotspots: YearRange };
+  indicators: IndicatorInfo[];
 }
 
-export interface InvestigationQuery {
-  region_id: string;
-  case_id: CaseId;
-  question_id: string;
-  variables: VariableId[];
-  start: string;
-  end: string;
-  aggregation: Aggregation;
-  department_id: string | null;
-  province_id: string | null;
-  place: PlaceRef | null;
-}
-
-export interface SeriesPoint {
-  date: string;
+export interface YearValue {
+  year: number;
   value: number;
-  anomaly: number;
-  z: number;
 }
 
-export interface Series {
-  variable: VariableId;
-  unit: string;
-  points: SeriesPoint[];
-}
-
-export interface MapCell {
-  id: string;
-  name: string;
-  lat: number;
-  lon: number;
-  value: number;
-  selected: boolean;
-}
-
-export interface TrendStat {
-  variable: VariableId;
-  test: "mann_kendall";
+export interface Trend {
   slope_per_decade: number;
+  /** Valor de la recta de Sen en el primer año de la serie. */
+  intercept: number;
   p_value: number;
-  significant: boolean;
-  n: number;
-  direction: "up" | "down" | "flat";
+  /** p corregido por FDR entre los 6 indicadores. Solo en la sequía. */
+  q_value: number | null;
+  n_years: number;
+  method: string;
+  slope_low_per_decade: number;
+  slope_high_per_decade: number;
+  total_change: number;
+  ols_slope_per_decade: number;
+  ols_p_value: number;
+  notes: string[];
 }
 
-export interface LagRelation {
-  driver: VariableId;
-  response: VariableId;
-  lag: number;
-  lag_unit: "months" | "years";
-  r: number;
-  p_value: number;
-  n: number;
-  sentence: string;
+export interface DroughtIndicator extends IndicatorInfo {
+  series: YearValue[];
+  trend: Trend | null;
+  points_to_drying: boolean | null;
+  verdict: Verdict;
 }
 
-export interface Hotspot {
+/** GET /api/drought */
+export interface DroughtResponse {
+  region: Region;
+  season: Season;
+  start: number;
+  end: number;
+  source: string;
+  summary: {
+    pointing_to_drying: number;
+    real_changes: number;
+    total: number;
+    text: string;
+  };
+  indicators: DroughtIndicator[];
+}
+
+/** GET /api/hotspots */
+export interface HotspotsResponse {
+  region: Region;
+  season: Season;
+  start: number;
+  end: number;
+  source: string;
+  series: YearValue[];
+  trend: Trend | null;
+  percent_change: number | null;
+  verdict: Verdict;
+}
+
+export interface HotspotCell {
   lat: number;
   lon: number;
-  date: string;
+  count: number;
 }
 
-export interface EventWindow {
-  kind: "drought" | "fire_favorable";
-  start: string;
-  end: string;
-  duration: number;
-  duration_unit: "months" | "years";
-  intensity: number;
-  intensity_unit: string;
-  extent_count: number;
-  extent_total: number;
-  recovery_note: string | null;
+/** GET /api/hotspots/grid */
+export interface HotspotGridResponse {
+  region: Region;
+  season: Season;
+  year: number;
+  cell_deg: number;
+  cells: HotspotCell[];
 }
 
-export interface InvestigationResult {
-  query: InvestigationQuery;
-  series: Series[];
-  map_cells: MapCell[];
-  map_variable: VariableId;
-  map_caption: string;
-  statistics: TrendStat[];
-  relations: LagRelation[];
-  sequence_label: string;
-  event: EventWindow | null;
-  hotspots: Hotspot[];
-  conclusion: string;
+export interface LinkPoint {
+  year: number;
+  drought_value: number;
+  hotspots: number;
+}
+
+/** GET /api/link */
+export interface LinkResponse {
+  region: Region;
+  season: Season;
+  indicator: string;
+  indicator_label: string;
+  indicator_unit: string;
+  points: LinkPoint[];
+  rho: number | null;
+  p_value: number | null;
+  n_years: number;
+  method: string;
   caveat: string;
-  source: "demo" | "api";
 }

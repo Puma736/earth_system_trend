@@ -16,10 +16,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app import services  # noqa: E402
+from app.data import power  # noqa: E402
 from app.data.errors import DataSourceError  # noqa: E402
 from app.regions import REGIONS, SEASONS  # noqa: E402
 
-START, END = 1981, 2025
+# Todas las consultas piden este período a POWER (ver services.drought_series).
+START, END = power.FIRST_YEAR, power.LAST_YEAR
 
 
 def main(region_ids: list[str]) -> int:

@@ -23,6 +23,11 @@ from app.regions import POWER_MAX_SPAN_DEG, BBox
 
 FILL_VALUE = -999.0
 
+# Período completo que se pide a POWER. Todas las consultas descargan este
+# período y recortan los años después, así comparten la misma caché.
+FIRST_YEAR = 1981
+LAST_YEAR = 2025
+
 # Monthly[año][mes] = valor
 Monthly = dict[int, dict[int, float]]
 

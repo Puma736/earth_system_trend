@@ -9,7 +9,9 @@ from __future__ import annotations
 
 import csv
 from collections import defaultdict
+from collections.abc import Sequence
 from dataclasses import dataclass
+from functools import lru_cache
 from pathlib import Path
 
 from app.config import get_settings
@@ -17,7 +19,9 @@ from app.data.errors import DataNotAvailable
 from app.regions import BBox
 
 CELL_DEG = 0.5
+FIRST_YEAR = 2001  # primer año de MODIS en FIRMS (2001-2002 solo Terra)
 FIRST_COMPARABLE_YEAR = 2003  # Aqua + Terra completos
+LAST_YEAR = 2025
 
 
 @dataclass(frozen=True)
@@ -34,14 +38,20 @@ def cell_center(value: float) -> float:
     return (value // CELL_DEG) * CELL_DEG + CELL_DEG / 2
 
 
-def load_cells(path: Path | None = None) -> list[CellCount]:
+def load_cells(path: Path | None = None) -> tuple[CellCount, ...]:
     path = path or get_settings().firms_csv
     if not path.exists():
         raise DataNotAvailable(
             f"{path.name} not found. Run scripts/download_firms.py first (needs FIRMS_MAP_KEY)."
         )
+    # Se lee una vez por versión del archivo: si se regenera, cambia su mtime y se vuelve a leer.
+    return _read_cells(path, path.stat().st_mtime_ns)
+
+
+@lru_cache(maxsize=4)
+def _read_cells(path: Path, _mtime_ns: int) -> tuple[CellCount, ...]:
     with path.open(newline="", encoding="utf-8") as fh:
-        return [
+        return tuple(
             CellCount(
                 year=int(row["year"]),
                 month=int(row["month"]),
@@ -50,7 +60,7 @@ def load_cells(path: Path | None = None) -> list[CellCount]:
                 count=int(row["count"]),
             )
             for row in csv.DictReader(fh)
-        ]
+        )
 
 
 def yearly_counts(
@@ -58,7 +68,7 @@ def yearly_counts(
     months: tuple[int, ...],
     start: int,
     end: int,
-    cells: list[CellCount] | None = None,
+    cells: Sequence[CellCount] | None = None,
 ) -> dict[int, int]:
     """Total de focos por año dentro del rectángulo y de los meses de la época.
 
@@ -73,7 +83,7 @@ def yearly_counts(
 
 
 def grid_for_year(
-    bbox: BBox, months: tuple[int, ...], year: int, cells: list[CellCount] | None = None
+    bbox: BBox, months: tuple[int, ...], year: int, cells: Sequence[CellCount] | None = None
 ) -> list[dict]:
     """Densidad por celda de un año, para el mapa."""
     cells = cells if cells is not None else load_cells()

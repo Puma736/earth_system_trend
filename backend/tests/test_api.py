@@ -1,3 +1,6 @@
+from app.data import power
+
+
 def test_health(client):
     assert client.get("/health").json() == {"status": "ok"}
 
@@ -6,6 +9,33 @@ def test_regions(client):
     data = client.get("/api/regions").json()
     assert {r["id"] for r in data["regions"]} >= {"santa_cruz", "chiquitania"}
     assert {s["id"] for s in data["seasons"]} == {"ANN", "DRY", "FIRE"}
+
+
+def test_regions_lists_years_and_indicators(client):
+    data = client.get("/api/regions").json()
+    assert data["years"] == {
+        "drought": {"start": 1981, "end": 2025},
+        "hotspots": {"start": 2003, "end": 2025},
+    }
+    assert [i["param"] for i in data["indicators"]] == [
+        "PRECTOTCORR", "GWETTOP", "GWETROOT", "EVPTRNS", "T2M_MAX", "RH2M",
+    ]
+    assert all(i["label"] and i["unit"] and i["definition"] for i in data["indicators"])
+
+
+def test_drought_always_reads_the_full_power_period(client, fake_power, monkeypatch):
+    calls = []
+
+    def recording(param, bbox, start, end):
+        calls.append((start, end))
+        return fake_power(param, bbox, start, end)
+
+    monkeypatch.setattr(power, "fetch_regional", recording)
+    data = client.get("/api/drought?start=2000&end=2020").json()
+    # Un solo período para todas las consultas -> una sola caché de POWER
+    assert set(calls) == {(1981, 2025)}
+    years = [p["year"] for p in data["indicators"][0]["series"]]
+    assert years == list(range(2000, 2021))
 
 
 def test_unknown_region_is_404(client):
@@ -57,6 +87,8 @@ def test_hotspot_grid(client, firms_csv):
 def test_link(client, fake_power, firms_csv):
     data = client.get("/api/link?season=FIRE&indicator=GWETTOP").json()
     assert data["n_years"] == 23
+    assert [p["year"] for p in data["points"]] == list(range(2003, 2026))
+    assert data["indicator_unit"] == "0-1"
     # Suelo cada vez más seco y focos en aumento -> correlación negativa
     assert data["rho"] < -0.9
     assert data["caveat"] == "Relationship, not proof of cause."

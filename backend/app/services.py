@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from app import schemas
 from app.data import firms, power
-from app.regions import Region, Season
+from app.regions import REGIONS, SEASONS, Region, Season
 from app.stats.trend import ALPHA, MIN_YEARS, TrendResult, fdr, spearman, trend
 
 
@@ -24,6 +24,23 @@ def region_out(r: Region) -> schemas.RegionOut:
 
 def season_out(s: Season) -> schemas.SeasonOut:
     return schemas.SeasonOut(id=s.id, name=s.name, months=list(s.months))
+
+
+def indicator_out(i: power.Indicator) -> schemas.IndicatorOut:
+    return schemas.IndicatorOut(param=i.param, label=i.label, unit=i.unit, definition=i.definition)
+
+
+def catalog() -> schemas.RegionsResponse:
+    """Todo lo que el frontend necesita para armar los selectores."""
+    return schemas.RegionsResponse(
+        regions=[region_out(r) for r in REGIONS.values()],
+        seasons=[season_out(s) for s in SEASONS.values()],
+        years=schemas.YearsOut(
+            drought=schemas.YearRange(start=power.FIRST_YEAR, end=power.LAST_YEAR),
+            hotspots=schemas.YearRange(start=firms.FIRST_COMPARABLE_YEAR, end=firms.LAST_YEAR),
+        ),
+        indicators=[indicator_out(i) for i in power.DROUGHT_INDICATORS.values()],
+    )
 
 
 def _verdict(p_or_q: float | None) -> schemas.Verdict:
@@ -61,8 +78,14 @@ def _try_trend(series: dict[int, float]) -> TrendResult | None:
 # ---------------------------------------------------------------------------
 
 def drought_series(param: str, region: Region, season: Season, start: int, end: int) -> dict[int, float]:
-    monthly = power.fetch_regional(param, region.bbox, start, end)
-    return power.seasonal_series(monthly, season.months)
+    """Promedio de la época por año, de start a end.
+
+    Siempre se pide a POWER el período completo y los años se recortan aquí. Así
+    cualquier rango de años, y también /api/link, reusa la caché que deja warm_cache.
+    """
+    monthly = power.fetch_regional(param, region.bbox, power.FIRST_YEAR, power.LAST_YEAR)
+    seasonal = power.seasonal_series(monthly, season.months)
+    return {year: value for year, value in seasonal.items() if start <= year <= end}
 
 
 def drought(region: Region, season: Season, start: int, end: int) -> schemas.DroughtResponse:
@@ -159,11 +182,13 @@ def link(region: Region, season: Season, param: str, start: int, end: int) -> sc
         res = spearman([pt.drought_value for pt in points], [pt.hotspots for pt in points])
         rho, p = res.rho, res.p_value
 
+    indicator = power.DROUGHT_INDICATORS[param]
     return schemas.LinkResponse(
         region=region_out(region),
         season=season_out(season),
         indicator=param,
-        indicator_label=power.DROUGHT_INDICATORS[param].label,
+        indicator_label=indicator.label,
+        indicator_unit=indicator.unit,
         points=points,
         rho=rho,
         p_value=p,
