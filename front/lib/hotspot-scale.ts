@@ -1,17 +1,16 @@
 import { formatCount } from "./format";
 
 /**
- * Escala del mapa de focos por celda de 0,5°. Son pasos de la rampa "signal"
- * de theme.ts, de oscuro (pocos focos) a claro (muchos), validados sobre el
- * fondo #151722: un solo tono, luminosidad creciente y contraste >= 2:1.
- * Los cortes son fijos para que dos años se puedan comparar a simple vista.
+ * Escala de calor del mapa de focos. Más detecciones, rojo más oscuro.
+ * `ink` es el color del número dentro del cuadro. Los cortes no cambian,
+ * así dos años se comparan con la misma escala.
  */
 export const HOTSPOT_BINS = [
-  { min: 1, max: 24, color: "#6a7318" },
-  { min: 25, max: 99, color: "#8e9920" },
-  { min: 100, max: 249, color: "#b3c028" },
-  { min: 250, max: 999, color: "#d5db45" },
-  { min: 1000, max: Number.POSITIVE_INFINITY, color: "#f6f8d4" },
+  { min: 1, max: 24, color: "#f3c4b4", ink: "#151722" },
+  { min: 25, max: 99, color: "#e8876c", ink: "#151722" },
+  { min: 100, max: 249, color: "#d14b38", ink: "#151722" },
+  { min: 250, max: 999, color: "#a3201c", ink: "#f6f8d4" },
+  { min: 1000, max: Number.POSITIVE_INFINITY, color: "#6e1210", ink: "#f6f8d4" },
 ] as const;
 
 export type HotspotBin = (typeof HOTSPOT_BINS)[number];

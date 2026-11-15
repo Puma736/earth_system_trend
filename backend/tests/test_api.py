@@ -33,7 +33,10 @@ def test_investigation_runs(client):
 
 def test_regions(client):
     data = client.get("/api/regions").json()
-    assert {r["id"] for r in data["regions"]} >= {"santa_cruz", "chiquitania"}
+    assert {r["id"] for r in data["regions"]} == {
+        "santa-cruz", "beni", "chuquisaca", "cochabamba", "la-paz", "oruro", "pando", "potosi", "tarija",
+    }
+    assert "chiquitania" not in {r["id"] for r in data["regions"]}
     assert {s["id"] for s in data["seasons"]} == {"ANN", "DRY", "FIRE"}
 
 
@@ -52,7 +55,7 @@ def test_regions_lists_years_and_indicators(client):
 def test_drought_always_reads_the_full_power_period(client, fake_power, monkeypatch):
     calls = []
 
-    def recording(param, bbox, start, end):
+    def recording(param, bbox, start, end, inside=None):
         calls.append((start, end))
         return fake_power(param, bbox, start, end)
 
@@ -73,7 +76,7 @@ def test_bad_years_are_422(client, fake_power):
 
 
 def test_drought_dashboard(client, fake_power):
-    resp = client.get("/api/drought?region=santa_cruz&season=DRY")
+    resp = client.get("/api/drought?region=santa-cruz&season=DRY")
     assert resp.status_code == 200
     data = resp.json()
     assert len(data["indicators"]) == 6

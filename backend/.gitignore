@@ -9,3 +9,4 @@ __pycache__/
 
 # Respuestas crudas de FIRMS (pueden pesar mucho; solo se versiona el CSV agregado)
 data/firms_raw/
+data/firms_places/

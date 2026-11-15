@@ -161,6 +161,27 @@ body {
   filter: grayscale(1) invert(1) brightness(0.75) contrast(0.9);
 }
 
+.joined-heat {
+  position: absolute;
+  pointer-events: none;
+}
+
+.color-key {
+  border: 1px solid #39383a;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #151722;
+}
+
+.key-frame {
+  width: 14px;
+  height: 10px;
+  border: 1px solid #f6f8d4;
+  border-radius: 2px;
+  display: inline-block;
+  box-sizing: border-box;
+}
+
 /* .geo-map.leaflet-container gana a leaflet.css, que se carga después. */
 .geo-map.leaflet-container .leaflet-control-attribution {
   background: rgba(21, 23, 34, 0.92);
@@ -172,6 +193,29 @@ body {
 
 .geo-map.leaflet-container .leaflet-control-attribution a {
   color: #cbd931;
+}
+
+.leaflet-tooltip.place-label {
+  background: #151722;
+  color: #cbd931;
+  border: 1px solid #cbd931;
+  border-radius: 4px;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 650;
+  padding: 2px 6px;
+}
+
+.leaflet-tooltip.place-label::before {
+  display: none;
+}
+
+.leaflet-tooltip.map-tooltip {
+  background: #39383a;
+  color: #a0a0a5;
+  border: 0;
+  border-radius: 4px;
+  box-shadow: none;
 }
 
 .geo-map.leaflet-container .leaflet-bar {

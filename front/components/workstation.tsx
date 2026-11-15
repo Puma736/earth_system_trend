@@ -8,6 +8,7 @@ import {
   Button,
   Grid,
   Group,
+  MultiSelect,
   Paper,
   SegmentedControl,
   Select,
@@ -18,7 +19,7 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { BridgePanel } from "@/components/bridge-panel";
 import { DroughtBoard } from "@/components/drought-board";
 import { HotspotsPanel } from "@/components/hotspots-panel";
@@ -26,6 +27,7 @@ import { LeadPanel } from "@/components/lead-panel";
 import { MapPanel } from "@/components/map-panel";
 import { MethodsPanel } from "@/components/methods-panel";
 import { API_LABEL, api } from "@/lib/api";
+import { featureBounds, provincesForRegion, type DepartmentFeature } from "@/lib/bolivia";
 import { seasonShort } from "@/lib/format";
 import type { Catalog, YearValue } from "@/lib/types";
 import { useResource } from "@/lib/use-resource";
@@ -118,6 +120,7 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
       : (catalog.indicators[0]?.param ?? ""),
   );
   const [pickedYear, setPickedYear] = useState<number | null>(null);
+  const [pickedProvinces, setPickedProvinces] = useState<{ regionId: string; ids: string[] } | null>(null);
 
   const region = catalog.regions.find((item) => item.id === regionId) ?? catalog.regions[0];
   const season = catalog.seasons.find((item) => item.id === seasonId) ?? catalog.seasons[0];
@@ -129,21 +132,35 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
   const fireEmpty = fireValid
     ? null
     : `Hotspot records cover ${catalog.years.hotspots.start}–${catalog.years.hotspots.end}. Choose a period that ends after ${catalog.years.hotspots.start}.`;
-  const area = { region: region.id, season: season.id };
+  const available = useMemo(() => provincesForRegion(region.id), [region.id]);
+  const provinceIds = useMemo(() => {
+    if (!pickedProvinces || pickedProvinces.regionId !== region.id) return [];
+    const known = new Set(available.map((feature) => feature.properties.id));
+    return pickedProvinces.ids.filter((id) => known.has(id));
+  }, [available, pickedProvinces, region.id]);
+  const selected = useMemo(() => {
+    if (provinceIds.length === 0) return available;
+    const wanted = new Set(provinceIds);
+    return available.filter((feature) => wanted.has(feature.properties.id));
+  }, [available, provinceIds]);
+  const provinceData = useMemo(() => provinceOptions(region.id, available), [available, region.id]);
+  const scopeIds =
+    provinceIds.length > 0 && provinceIds.length < available.length ? [...provinceIds].sort().join(",") : "";
+  const area = { region: region.id, season: season.id, ...(scopeIds ? { provinces: scopeIds } : {}) };
 
-  const drought = useResource(`drought|${area.region}|${area.season}|${start}|${end}`, (signal) =>
+  const drought = useResource(`drought|${area.region}|${area.season}|${start}|${end}|${scopeIds}`, (signal) =>
     api.drought({ ...area, start, end }, signal),
   );
   const hotspots = useResource(
-    fireValid ? `hotspots|${area.region}|${area.season}|${fireStart}|${fireEnd}` : null,
+    fireValid ? `hotspots|${area.region}|${area.season}|${fireStart}|${fireEnd}|${scopeIds}` : null,
     (signal) => api.hotspots({ ...area, start: fireStart, end: fireEnd }, signal),
   );
   const lead = useResource(
-    fireValid ? `lead|${area.region}|${area.season}|${fireStart}|${fireEnd}` : null,
+    fireValid ? `lead|${area.region}|${area.season}|${fireStart}|${fireEnd}|${scopeIds}` : null,
     (signal) => api.lead({ ...area, start: fireStart, end: fireEnd }, signal),
   );
   const link = useResource(
-    fireValid ? `link|${area.region}|${area.season}|${indicator}|${fireStart}|${fireEnd}` : null,
+    fireValid ? `link|${area.region}|${area.season}|${indicator}|${fireStart}|${fireEnd}|${scopeIds}` : null,
     (signal) => api.link({ ...area, indicator, start: fireStart, end: fireEnd }, signal),
   );
 
@@ -152,7 +169,7 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
   const mapYear =
     pickedYear !== null && pickedYear >= fireStart && pickedYear <= fireEnd ? pickedYear : (peakYear ?? null);
   const grid = useResource(
-    fireValid && mapYear !== null ? `grid|${area.region}|${area.season}|${mapYear}` : null,
+    fireValid && mapYear !== null ? `grid|${area.region}|${area.season}|${mapYear}|${scopeIds}` : null,
     (signal) => api.hotspotGrid({ ...area, year: mapYear ?? fireEnd }, signal),
   );
 
@@ -163,20 +180,56 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
     <Stack gap="sm">
       <Paper p="md" component="section" aria-label="Filters">
         <Group gap="xl" align="flex-end" wrap="wrap">
-          <div>
-            <Text size="sm" fw={600} mb={6} id="region-label">
-              Region
-            </Text>
-            <SegmentedControl
-              aria-labelledby="region-label"
-              color="signal"
-              value={region.id}
-              onChange={setRegionId}
-              data={catalog.regions.map((item) => ({ value: item.id, label: item.name }))}
-              orientation={narrow ? "vertical" : "horizontal"}
-              fullWidth={narrow}
+          <Stack gap={8} style={{ flex: "1 1 320px", minWidth: narrow ? "100%" : 280 }}>
+            <div>
+              <Text size="sm" fw={600} mb={6} id="region-label">
+                Region
+              </Text>
+              <Select
+                aria-labelledby="region-label"
+                data={catalog.regions.map((item) => ({ value: item.id, label: item.name }))}
+                value={region.id}
+                onChange={(value) => {
+                  if (!value) return;
+                  setRegionId(value);
+                  setPickedProvinces(null);
+                }}
+                allowDeselect={false}
+                searchable
+                nothingFoundMessage="No department with that name"
+              />
+            </div>
+            <MultiSelect
+              label="Provinces"
+              aria-label="Provinces"
+              placeholder="All provinces in this region"
+              data={provinceData}
+              value={provinceIds}
+              onChange={(ids) =>
+                setPickedProvinces(
+                  ids.length === 0 || ids.length >= available.length ? null : { regionId: region.id, ids },
+                )
+              }
+              searchable
+              clearable
+              nothingFoundMessage="No province with that name"
+              comboboxProps={{ withinPortal: true }}
+              styles={{ pillsList: { maxHeight: 58, overflow: "auto" } }}
             />
-          </div>
+            <Group gap="xs">
+              <Button
+                size="compact-xs"
+                variant="subtle"
+                color="signal"
+                onClick={() => setPickedProvinces(null)}
+              >
+                All provinces
+              </Button>
+              <Text size="xs" c="dimmed">
+                Empty shows every province of the region. A shorter list recalculates drought, hotspots, and both comparisons for those provinces.
+              </Text>
+            </Group>
+          </Stack>
           <div>
             <Text size="sm" fw={600} mb={6} id="season-label">
               Season
@@ -212,7 +265,7 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
         </Group>
         <Text size="xs" mt="sm" c="dimmed">
           {season.name}. Drought data {catalog.years.drought.start}–{catalog.years.drought.end}; hotspots{" "}
-          {catalog.years.hotspots.start}–{catalog.years.hotspots.end}. {region.note}
+          {catalog.years.hotspots.start}–{catalog.years.hotspots.end}. {scopeNote(selected, available, region.note)}
         </Text>
       </Paper>
 
@@ -237,6 +290,9 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
             peakYear={peakYear}
             onPickYear={setPickedYear}
             emptyReason={fireEmpty}
+            selected={selected}
+            available={available}
+            areaNote={scopeNote(selected, available, region.note)}
           />
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 7 }}>
@@ -254,11 +310,40 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
           </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 5 }}>
-          <MethodsPanel region={region} hotspotStart={catalog.years.hotspots.start} />
+          <MethodsPanel
+            region={region}
+            areaNote={scopeNote(selected, available, region.note)}
+            hotspotStart={catalog.years.hotspots.start}
+          />
         </Grid.Col>
       </Grid>
     </Stack>
   );
+}
+
+function scopeNote(selected: DepartmentFeature[], available: DepartmentFeature[], regionNote: string): string {
+  if (selected.length === 0 || selected.length === available.length) return regionNote;
+  const names = selected.map((feature) => feature.properties.name);
+  const label =
+    names.length === 1
+      ? names[0]
+      : names.length === 2
+        ? `${names[0]} and ${names[1]}`
+        : names.length === 3
+          ? `${names[0]}, ${names[1]} and ${names[2]}`
+          : `${names.length} provinces`;
+  const bounds = selected.map((feature) => featureBounds(feature));
+  const latSpan = Math.max(...bounds.map((box) => box.north)) - Math.min(...bounds.map((box) => box.south));
+  const lonSpan = Math.max(...bounds.map((box) => box.east)) - Math.min(...bounds.map((box) => box.west));
+  const drought =
+    latSpan < 2 || lonSpan < 2
+      ? `Drought uses the MERRA-2 cell at the center of ${label}, because the selected area is smaller than 2°.`
+      : `Drought uses the MERRA-2 average of the rectangle around ${label}.`;
+  return `${drought} Hotspots, the drought-versus-fire comparison, and the season-ahead test count only cells whose center is inside ${label}.`;
+}
+
+function provinceOptions(_regionId: string, features: DepartmentFeature[]) {
+  return features.map((feature) => ({ value: feature.properties.id, label: feature.properties.name }));
 }
 
 function range(first: number, last: number): number[] {

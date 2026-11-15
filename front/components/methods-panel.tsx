@@ -1,7 +1,15 @@
 import { List, Paper, Stack, Text, Title } from "@mantine/core";
 import type { Region } from "@/lib/types";
 
-export function MethodsPanel({ region, hotspotStart }: { region: Region; hotspotStart: number }) {
+export function MethodsPanel({
+  region,
+  areaNote,
+  hotspotStart,
+}: {
+  region: Region;
+  areaNote?: string;
+  hotspotStart: number;
+}) {
   return (
     <Paper p="md" h="100%">
       <Stack gap="sm">
@@ -27,7 +35,7 @@ export function MethodsPanel({ region, hotspotStart }: { region: Region; hotspot
             so they are not 6 independent proofs.
           </List.Item>
           <List.Item>
-            <strong>Approximate area:</strong> {region.note}
+            <strong>Approximate area:</strong> {areaNote ?? region.note}
           </List.Item>
           <List.Item>
             <strong>Seasons:</strong> the months of the dry season and of the burning peak are still to be confirmed.

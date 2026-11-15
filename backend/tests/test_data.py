@@ -4,7 +4,7 @@ import pytest
 
 from app.data import firms, power
 from app.data.errors import DataNotAvailable
-from app.regions import REGIONS, BBox
+from app.regions import BOLIVIA_BBOX, REGIONS, BBox
 
 
 def test_parse_series_drops_annual_and_fill():
@@ -24,14 +24,14 @@ def test_seasonal_series_requires_all_months():
 
 
 def test_tiles_split_large_regions():
-    tiles = power._tiles(REGIONS["bolivia"].bbox)
+    tiles = power._tiles(BOLIVIA_BBOX)
     assert len(tiles) == 4
     for t in tiles:
         assert t.north - t.south <= 10 and t.east - t.west <= 10
 
 
 def test_tiles_keep_small_regions_whole():
-    bbox = REGIONS["santa_cruz"].bbox
+    bbox = REGIONS["santa-cruz"].bbox
     assert power._tiles(bbox) == [bbox]
 
 
@@ -41,7 +41,7 @@ def test_cell_center():
 
 
 def test_yearly_counts_filters_region_and_months(firms_csv):
-    counts = firms.yearly_counts(REGIONS["santa_cruz"].bbox, (8, 9), 2003, 2025)
+    counts = firms.yearly_counts(REGIONS["santa-cruz"].bbox, (8, 9), 2003, 2025)
     assert counts[2003] == 200
     assert counts[2010] == 2 * (100 + 20 * 7)  # la celda de 99999 queda fuera
 

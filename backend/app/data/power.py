@@ -19,7 +19,7 @@ import httpx
 
 from app.config import get_settings
 from app.data.errors import DataSourceError
-from app.regions import POWER_MAX_SPAN_DEG, BBox
+from app.regions import POWER_MAX_SPAN_DEG, POWER_MIN_SPAN_DEG, BBox
 
 FILL_VALUE = -999.0
 
@@ -84,6 +84,17 @@ def _get_json(url: str, params: dict, kind: str) -> dict:
     return payload
 
 
+def _at_least_min_span(bbox: BBox) -> BBox:
+    south, north, west, east = bbox.south, bbox.north, bbox.west, bbox.east
+    if north - south < POWER_MIN_SPAN_DEG:
+        south = round((south + north) / 2 - POWER_MIN_SPAN_DEG / 2, 4)
+        north = round(south + POWER_MIN_SPAN_DEG, 4)
+    if east - west < POWER_MIN_SPAN_DEG:
+        west = round((west + east) / 2 - POWER_MIN_SPAN_DEG / 2, 4)
+        east = round(west + POWER_MIN_SPAN_DEG, 4)
+    return BBox(west=west, south=south, east=east, north=north)
+
+
 def _tiles(bbox: BBox) -> list[BBox]:
     """Parte un rectángulo en mosaicos de 10° x 10° como máximo."""
 
@@ -128,12 +139,18 @@ def fetch_point(param: str, lat: float, lon: float, start: int, end: int) -> Mon
         raise DataSourceError(f"Unexpected POWER point response for {param}") from exc
 
 
-def fetch_regional(param: str, bbox: BBox, start: int, end: int) -> Monthly:
-    """Serie mensual de la región: promedio de celdas ponderado por cos(latitud)."""
+def fetch_regional(param: str, bbox: BBox, start: int, end: int, inside=None) -> Monthly:
+    """Serie mensual de la región: promedio de celdas ponderado por cos(latitud).
+
+    `inside(lat, lon)` descarta celdas del rectángulo que caen fuera del departamento.
+    """
     settings = get_settings()
     cells: dict[tuple[float, float], Monthly] = {}
+    # POWER rechaza un lado menor de 2°. Se ensancha el pedido y, si hay polígono,
+    # las celdas de afuera se descartan abajo.
+    request = _at_least_min_span(bbox) if inside is not None else bbox
 
-    for tile in _tiles(bbox):
+    for tile in _tiles(request):
         params = {
             "parameters": param,
             "community": "AG",
@@ -149,6 +166,8 @@ def fetch_regional(param: str, bbox: BBox, start: int, end: int) -> Monthly:
         try:
             for feature in payload["features"]:
                 lon, lat = feature["geometry"]["coordinates"][:2]
+                if inside is not None and not inside(lat, lon):
+                    continue
                 cells[(round(lat, 4), round(lon, 4))] = _parse_series(
                     feature["properties"]["parameter"][param]
                 )

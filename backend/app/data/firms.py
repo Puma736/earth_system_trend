@@ -69,26 +69,38 @@ def yearly_counts(
     start: int,
     end: int,
     cells: Sequence[CellCount] | None = None,
+    *,
+    inside=None,
 ) -> dict[int, int]:
     """Total de focos por año dentro del rectángulo y de los meses de la época.
 
     Los años sin ningún foco aparecen con 0 (son datos, no faltantes).
+    `inside(lat, lon)` deja fuera celdas del rectángulo que no caen en la provincia.
     """
     cells = cells if cells is not None else load_cells()
     totals: dict[int, int] = {year: 0 for year in range(start, end + 1)}
     for c in cells:
         if start <= c.year <= end and c.month in months and bbox.contains(c.lat, c.lon):
+            if inside is not None and not inside(c.lat, c.lon):
+                continue
             totals[c.year] += c.count
     return totals
 
 
 def grid_for_year(
-    bbox: BBox, months: tuple[int, ...], year: int, cells: Sequence[CellCount] | None = None
+    bbox: BBox,
+    months: tuple[int, ...],
+    year: int,
+    cells: Sequence[CellCount] | None = None,
+    *,
+    inside=None,
 ) -> list[dict]:
     """Densidad por celda de un año, para el mapa."""
     cells = cells if cells is not None else load_cells()
     grid: dict[tuple[float, float], int] = defaultdict(int)
     for c in cells:
         if c.year == year and c.month in months and bbox.contains(c.lat, c.lon):
+            if inside is not None and not inside(c.lat, c.lon):
+                continue
             grid[(c.lat, c.lon)] += c.count
     return [{"lat": lat, "lon": lon, "count": n} for (lat, lon), n in sorted(grid.items())]
