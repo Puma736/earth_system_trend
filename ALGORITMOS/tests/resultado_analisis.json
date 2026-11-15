@@ -1,0 +1,701 @@
+{
+  "entity_name": "Santa Cruz - Chiquitania",
+  "domain": "clima",
+  "n_observations": 120,
+  "date_range": {
+    "start": "2014-01-01 00:00:00",
+    "end": "2023-12-01 00:00:00"
+  },
+  "frequency": "M",
+  "seasonal_period": 12,
+  "variables": [
+    "precipitacion",
+    "temperatura",
+    "humedad_suelo"
+  ],
+  "trends": {
+    "precipitacion": {
+      "linear_regression": {
+        "n": 120,
+        "slope": -0.3684850231759109,
+        "intercept": 95.19775522999231,
+        "r_squared": 0.08283049431261368,
+        "p_value": 0.001435359520438898,
+        "std_err": 0.11287779420942091,
+        "trend": "decreciente"
+      },
+      "mann_kendall": {
+        "trend": "decreasing",
+        "h": true,
+        "p_value": 0.0011162387287622089,
+        "z": -3.2594616438165946,
+        "tau": -0.20140056022408964,
+        "s": -1438.0,
+        "var_s": 194366.66666666666,
+        "sens_slope": -0.38047123319818854,
+        "intercept": 92.79119798860049
+      },
+      "sens_slope": {
+        "slope": -0.38047123319818854,
+        "intercept": 90.19415198677137
+      }
+    },
+    "temperatura": {
+      "linear_regression": {
+        "n": 120,
+        "slope": 0.007789993821569914,
+        "intercept": 25.76448753528836,
+        "r_squared": 0.007417769709333631,
+        "p_value": 0.34961697682377313,
+        "std_err": 0.00829550223114928,
+        "trend": "creciente"
+      },
+      "mann_kendall": {
+        "trend": "no trend",
+        "h": false,
+        "p_value": 0.43924426406312,
+        "z": 0.7734700212536247,
+        "tau": 0.04789915966386555,
+        "s": 342.0,
+        "var_s": 194366.66666666666,
+        "sens_slope": 0.0063906530247822765,
+        "intercept": 25.675548329174134
+      },
+      "sens_slope": {
+        "slope": 0.0063906530247822765,
+        "intercept": 25.65082104632726
+      }
+    },
+    "humedad_suelo": {
+      "linear_regression": {
+        "n": 120,
+        "slope": -0.08704536988758886,
+        "intercept": 33.57292061258207,
+        "r_squared": 0.11917963140879209,
+        "p_value": 0.00011265968970973384,
+        "std_err": 0.021784486483752898,
+        "trend": "decreciente"
+      },
+      "mann_kendall": {
+        "trend": "decreasing",
+        "h": true,
+        "p_value": 0.0005797380146241871,
+        "z": -3.440920886339439,
+        "tau": -0.21260504201680672,
+        "s": -1518.0,
+        "var_s": 194366.66666666666,
+        "sens_slope": -0.08441291248255242,
+        "intercept": 33.5399925658613
+      },
+      "sens_slope": {
+        "slope": -0.08441291248255242,
+        "intercept": 32.91083977830571
+      }
+    }
+  },
+  "anomalies": {
+    "precipitacion": {
+      "n_anomalies_z2": 0,
+      "last_z_score": -1.165649382207184,
+      "mean": 73.27289635102561,
+      "std": 44.536634903570445,
+      "min": 1.0100885615166852,
+      "max": 154.1084707458682
+    },
+    "temperatura": {
+      "n_anomalies_z2": 1,
+      "last_z_score": 1.775589262430052,
+      "mean": 26.22799216767177,
+      "std": 3.1462492519042677,
+      "min": 20.46647491081646,
+      "max": 32.99528664752314
+    },
+    "humedad_suelo": {
+      "n_anomalies_z2": 5,
+      "last_z_score": -1.7213417597627823,
+      "mean": 28.393721104270526,
+      "std": 8.770762302338726,
+      "min": 4.148134167740157,
+      "max": 47.17724248595758
+    }
+  },
+  "relations": {
+    "precipitacion__vs__temperatura": {
+      "pearson": {
+        "r": -0.0861219855313308,
+        "p_value": 0.349642190142529,
+        "n": 120
+      },
+      "spearman": {
+        "rho": -0.08117230363219667,
+        "p_value": 0.37813035725570293,
+        "n": 120
+      },
+      "best_lag": {
+        "lag": -9,
+        "correlation": -0.8616157177899744,
+        "p_value": 6.979195685166914e-34
+      },
+      "cross_correlation": [
+        {
+          "lag": -6,
+          "correlation": -0.0052794873627567546,
+          "p_value": 0.9555420380311047,
+          "n": 114
+        },
+        {
+          "lag": -5,
+          "correlation": 0.40600454209568965,
+          "p_value": 6.737504207425015e-06,
+          "n": 115
+        },
+        {
+          "lag": -4,
+          "correlation": 0.698178725561927,
+          "p_value": 3.0165516578880912e-18,
+          "n": 116
+        },
+        {
+          "lag": -3,
+          "correlation": 0.7801105178597382,
+          "p_value": 3.5775983328094477e-25,
+          "n": 117
+        },
+        {
+          "lag": -2,
+          "correlation": 0.6476199190442581,
+          "p_value": 2.2743915727607154e-15,
+          "n": 118
+        },
+        {
+          "lag": -1,
+          "correlation": 0.32991579485627803,
+          "p_value": 0.0002482001266313282,
+          "n": 119
+        },
+        {
+          "lag": 0,
+          "correlation": -0.0861219855313308,
+          "p_value": 0.349642190142529,
+          "n": 120
+        },
+        {
+          "lag": 1,
+          "correlation": -0.4663857054169243,
+          "p_value": 8.999694007530859e-08,
+          "n": 119
+        },
+        {
+          "lag": 2,
+          "correlation": -0.7670386092731256,
+          "p_value": 4.20880218556784e-24,
+          "n": 118
+        },
+        {
+          "lag": 3,
+          "correlation": -0.8552146833711306,
+          "p_value": 1.2928372235044233e-34,
+          "n": 117
+        },
+        {
+          "lag": 4,
+          "correlation": -0.73768273328519,
+          "p_value": 3.572999643860527e-21,
+          "n": 116
+        },
+        {
+          "lag": 5,
+          "correlation": -0.39172572506239434,
+          "p_value": 1.4963882681043197e-05,
+          "n": 115
+        },
+        {
+          "lag": 6,
+          "correlation": 0.03993813326658374,
+          "p_value": 0.6731041942030864,
+          "n": 114
+        }
+      ]
+    },
+    "precipitacion__vs__humedad_suelo": {
+      "pearson": {
+        "r": 0.7943389675996968,
+        "p_value": 2.6261206768480806e-27,
+        "n": 120
+      },
+      "spearman": {
+        "rho": 0.8173067574137092,
+        "p_value": 4.998109614134834e-30,
+        "n": 120
+      },
+      "best_lag": {
+        "lag": 12,
+        "correlation": 0.8267380574752047,
+        "p_value": 3.0843463058675755e-28
+      },
+      "cross_correlation": [
+        {
+          "lag": -6,
+          "correlation": -0.595657006087007,
+          "p_value": 2.7371587764015365e-12,
+          "n": 114
+        },
+        {
+          "lag": -5,
+          "correlation": -0.48445516443167885,
+          "p_value": 4.113618639765968e-08,
+          "n": 115
+        },
+        {
+          "lag": -4,
+          "correlation": -0.20273141055847002,
+          "p_value": 0.029068609563170953,
+          "n": 116
+        },
+        {
+          "lag": -3,
+          "correlation": 0.17267865345983874,
+          "p_value": 0.06263658837250367,
+          "n": 117
+        },
+        {
+          "lag": -2,
+          "correlation": 0.5253937463297268,
+          "p_value": 1.006025311772677e-09,
+          "n": 118
+        },
+        {
+          "lag": -1,
+          "correlation": 0.7587707642858855,
+          "p_value": 1.5887325081182186e-23,
+          "n": 119
+        },
+        {
+          "lag": 0,
+          "correlation": 0.7943389675996968,
+          "p_value": 2.6261206768480806e-27,
+          "n": 120
+        },
+        {
+          "lag": 1,
+          "correlation": 0.7123000990133965,
+          "p_value": 1.0548171222030619e-19,
+          "n": 119
+        },
+        {
+          "lag": 2,
+          "correlation": 0.4449150364925374,
+          "p_value": 4.470697691303819e-07,
+          "n": 118
+        },
+        {
+          "lag": 3,
+          "correlation": 0.09265163988196673,
+          "p_value": 0.3204372499073251,
+          "n": 117
+        },
+        {
+          "lag": 4,
+          "correlation": -0.24242580762657298,
+          "p_value": 0.008742483179352863,
+          "n": 116
+        },
+        {
+          "lag": 5,
+          "correlation": -0.4815022549268126,
+          "p_value": 5.10492641476338e-08,
+          "n": 115
+        },
+        {
+          "lag": 6,
+          "correlation": -0.5900117358823,
+          "p_value": 4.923251888550694e-12,
+          "n": 114
+        }
+      ]
+    },
+    "temperatura__vs__humedad_suelo": {
+      "pearson": {
+        "r": -0.08020097989914339,
+        "p_value": 0.3838820938404722,
+        "n": 120
+      },
+      "spearman": {
+        "rho": -0.06271268838113755,
+        "p_value": 0.496211526213626,
+        "n": 120
+      },
+      "best_lag": {
+        "lag": -3,
+        "correlation": -0.7538843346537766,
+        "p_value": 1.0259553977785389e-22
+      },
+      "cross_correlation": [
+        {
+          "lag": -6,
+          "correlation": -0.05559656864725925,
+          "p_value": 0.5568534024111481,
+          "n": 114
+        },
+        {
+          "lag": -5,
+          "correlation": -0.4012143520269847,
+          "p_value": 8.841809951314828e-06,
+          "n": 115
+        },
+        {
+          "lag": -4,
+          "correlation": -0.6476504929026863,
+          "p_value": 3.93518862546486e-15,
+          "n": 116
+        },
+        {
+          "lag": -3,
+          "correlation": -0.7538843346537766,
+          "p_value": 1.0259553977785389e-22,
+          "n": 117
+        },
+        {
+          "lag": -2,
+          "correlation": -0.6625151947166718,
+          "p_value": 3.062983033797702e-16,
+          "n": 118
+        },
+        {
+          "lag": -1,
+          "correlation": -0.42989363563318245,
+          "p_value": 1.065128624922657e-06,
+          "n": 119
+        },
+        {
+          "lag": 0,
+          "correlation": -0.08020097989914339,
+          "p_value": 0.3838820938404722,
+          "n": 120
+        },
+        {
+          "lag": 1,
+          "correlation": 0.28062366264837285,
+          "p_value": 0.001992860979198318,
+          "n": 119
+        },
+        {
+          "lag": 2,
+          "correlation": 0.5570060887752792,
+          "p_value": 5.741012233399148e-11,
+          "n": 118
+        },
+        {
+          "lag": 3,
+          "correlation": 0.6679844373440792,
+          "p_value": 1.9232591752887244e-16,
+          "n": 117
+        },
+        {
+          "lag": 4,
+          "correlation": 0.5766255969763903,
+          "p_value": 1.2538657078021824e-11,
+          "n": 116
+        },
+        {
+          "lag": 5,
+          "correlation": 0.3044303650644066,
+          "p_value": 0.0009400893415131567,
+          "n": 115
+        },
+        {
+          "lag": 6,
+          "correlation": -0.05657090043864815,
+          "p_value": 0.5499504384759037,
+          "n": 114
+        }
+      ]
+    }
+  },
+  "changepoints": {
+    "precipitacion": {
+      "pelt": {
+        "breakpoints": [],
+        "segments": [
+          {
+            "start": 0,
+            "end": 120
+          }
+        ],
+        "penalty": 212.3285016930559
+      },
+      "cusum": {
+        "change_index": 90,
+        "change_value": 77.77893369355309,
+        "cusum_max": 824.254861880025,
+        "threshold": 44.35067736945491
+      }
+    },
+    "temperatura": {
+      "pelt": {
+        "breakpoints": [],
+        "segments": [
+          {
+            "start": 0,
+            "end": 120
+          }
+        ],
+        "penalty": 14.999750004825252
+      },
+      "cusum": {
+        "change_index": 93,
+        "change_value": 26.07905102422632,
+        "cusum_max": 39.132253066912945,
+        "threshold": 3.13311245443711
+      }
+    },
+    "humedad_suelo": {
+      "pelt": {
+        "breakpoints": [],
+        "segments": [
+          {
+            "start": 0,
+            "end": 120
+          }
+        ],
+        "penalty": 41.81462794379696
+      },
+      "cusum": {
+        "change_index": 90,
+        "change_value": 35.62882782679885,
+        "cusum_max": 215.946036009054,
+        "threshold": 8.734141005431411
+      }
+    }
+  },
+  "forecast": {
+    "precipitacion": {
+      "order": [
+        1,
+        1,
+        1
+      ],
+      "seasonal_order": [
+        1,
+        1,
+        1,
+        12
+      ],
+      "steps": 12,
+      "forecast": [
+        39.799317926105715,
+        60.08831042777774,
+        88.16437263400367,
+        91.35921444804812,
+        77.83078761350369,
+        58.21796207246304,
+        37.108061377287115,
+        14.811606097636908,
+        0.0,
+        0.0,
+        0.0,
+        9.506018116422506
+      ],
+      "lower": [
+        11.584108902154693,
+        29.613587023034835,
+        57.06124815995499,
+        59.92636537230662,
+        46.143424852649616,
+        26.29887381833215,
+        4.965267631948144,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "upper": [
+        68.01452695005673,
+        90.56303383252065,
+        119.26749710805234,
+        122.79206352378962,
+        109.51815037435776,
+        90.13705032659392,
+        69.25085512262609,
+        47.17458176247605,
+        31.420304911457983,
+        29.825435516643143,
+        30.80801177388781,
+        42.732033868047495
+      ],
+      "aic": 772.1325071001497,
+      "bic": 784.795504565916
+    },
+    "temperatura": {
+      "order": [
+        1,
+        1,
+        1
+      ],
+      "seasonal_order": [
+        1,
+        1,
+        1,
+        12
+      ],
+      "steps": 12,
+      "forecast": [
+        30.666438029375673,
+        30.586053577328933,
+        28.372363234950704,
+        26.145489944993166,
+        24.948815733774605,
+        23.504044781006133,
+        23.211966440917276,
+        22.748286105481654,
+        25.15576183426865,
+        27.643201964872375,
+        29.91195189632045,
+        31.849534947827532
+      ],
+      "lower": [
+        28.07322966604706,
+        27.831009584980418,
+        25.58957981569,
+        23.354370337811016,
+        22.153281238212163,
+        20.705121034234597,
+        20.409960394018576,
+        19.943293319889012,
+        22.347805920395167,
+        24.83226522146159,
+        27.097951308938427,
+        29.0322507176042
+      ],
+      "upper": [
+        33.25964639270429,
+        33.341097569677444,
+        31.155146654211407,
+        28.936609552175316,
+        27.744350229337048,
+        26.30296852777767,
+        26.013972487815977,
+        25.553278891074296,
+        27.96371774814213,
+        30.45413870828316,
+        32.72595248370247,
+        34.666819178050865
+      ],
+      "aic": 336.4591346207307,
+      "bic": 349.122132086497
+    },
+    "humedad_suelo": {
+      "order": [
+        1,
+        1,
+        1
+      ],
+      "seasonal_order": [
+        1,
+        1,
+        1,
+        12
+      ],
+      "steps": 12,
+      "forecast": [
+        17.264046731655604,
+        24.24715294899444,
+        26.724402688937992,
+        26.83065735047693,
+        21.92294671567877,
+        21.904450152131684,
+        20.097706899668555,
+        13.633760746415048,
+        9.009947480922875,
+        5.179208608607329,
+        5.329371930052603,
+        11.787276114506891
+      ],
+      "lower": [
+        7.982616374970004,
+        14.905584783792229,
+        17.24321592450113,
+        17.218153167907246,
+        12.180466347023938,
+        12.033733590307957,
+        10.100396919973388,
+        3.511440499403708,
+        0.0,
+        0.0,
+        0.0,
+        1.1794977899343202
+      ],
+      "upper": [
+        26.545477088341205,
+        33.58872111419665,
+        36.205589453374856,
+        36.44316153304661,
+        31.6654270843336,
+        31.77516671395541,
+        30.095016879363722,
+        23.756080993426387,
+        19.255753326611213,
+        15.547032320192478,
+        15.817811720963736,
+        22.395054439079463
+      ],
+      "aic": 568.6428054960332,
+      "bic": 581.3058029617995
+    }
+  },
+  "patterns": {
+    "pca": {
+      "explained_variance_ratio": [
+        0.6037953844667906,
+        0.32765837523831376,
+        0.06854624029489574
+      ],
+      "cumulative_variance": [
+        0.6037953844667906,
+        0.9314537597051044,
+        1.0
+      ],
+      "loadings": {
+        "PC1": {
+          "precipitacion": 0.7000580123095477,
+          "temperatura": -0.1434499477263028,
+          "humedad_suelo": 0.6995290500747813
+        },
+        "PC2": {
+          "precipitacion": 0.09766520584153521,
+          "temperatura": 0.9896432259612806,
+          "humedad_suelo": 0.10520357825131092
+        },
+        "PC3": {
+          "precipitacion": 0.7073756335704073,
+          "temperatura": 0.00532895921077758,
+          "humedad_suelo": -0.7068177383347098
+        }
+      }
+    }
+  },
+  "conclusiones_cientificas": [
+    "Analisis de 'Santa Cruz - Chiquitania' (dominio: clima) con 120 observaciones y 3 variables: precipitacion, temperatura, humedad_suelo.",
+    "- precipitacion: tendencia decreasing significativa (p=0.0011), pendiente de Sen=-0.3805 por periodo.",
+    "- temperatura: sin tendencia monotónica significativa (p=0.4392).",
+    "- humedad_suelo: tendencia decreasing significativa (p=0.0006), pendiente de Sen=-0.0844 por periodo.",
+    "- precipitacion: sin anomalias extremas. Ultimo Z-score=-1.17.",
+    "- temperatura: 1 anomalias (|Z|>2). Ultimo Z-score=1.78.",
+    "- humedad_suelo: 5 anomalias (|Z|>2). Ultimo Z-score=-1.72.",
+    "ALERTA DE SEQUIA: precipitacion muestra tendencia decreciente significativa; posible reduccion de disponibilidad hidrica.",
+    "ALERTA DE SEQUIA: humedad_suelo muestra tendencia decreciente significativa; posible reduccion de disponibilidad hidrica.",
+    "- precipitacion: CUSUM sugiere cambio alrededor del indice 90 (fecha aprox. 2021-07-01 00:00:00).",
+    "- temperatura: CUSUM sugiere cambio alrededor del indice 93 (fecha aprox. 2021-10-01 00:00:00).",
+    "- humedad_suelo: CUSUM sugiere cambio alrededor del indice 90 (fecha aprox. 2021-07-01 00:00:00).",
+    "  Mejor desfase temporal: lag=-9 (r=-0.862).",
+    "- Relacion fuerte entre precipitacion y humedad_suelo: Pearson r=0.794 (p=0.0000).",
+    "  Mejor desfase temporal: lag=12 (r=0.827).",
+    "  Mejor desfase temporal: lag=-3 (r=-0.754).",
+    "- Pronostico precipitacion (12 pasos): media proyectada=39.740 vs historica=73.273 (-45.8%).",
+    "- Pronostico temperatura (12 pasos): media proyectada=27.062 vs historica=26.228 (+3.2%).",
+    "- Pronostico humedad_suelo (12 pasos): media proyectada=16.994 vs historica=28.394 (-40.1%).",
+    "- PCA: el primer componente explica 60.4% de la varianza total.",
+    "Nota: correlacion y sucesion temporal no implican causalidad; controlar estacionalidad y factores externos."
+  ]
+}

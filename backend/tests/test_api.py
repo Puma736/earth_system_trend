@@ -1,0 +1,152 @@
+from app.data import power
+
+
+def test_health(client):
+    data = client.get("/health").json()
+    assert data["status"] == "ok"
+    assert data["engine"] in {"sci_lab_math", "local"}
+
+
+def test_investigation_catalog(client):
+    data = client.get("/catalog").json()
+    assert {r["id"] for r in data["regions"]} >= {"bolivia", "santa_cruz"}
+    assert {c["id"] for c in data["cases"]} == {"drought", "heat", "signal"}
+
+
+def test_investigation_runs(client):
+    query = {
+        "region_id": "santa_cruz",
+        "case_id": "drought",
+        "question_id": "trend",
+        "variables": ["precipitation", "soil_moisture"],
+        "start": "2001-01",
+        "end": "2010-12",
+        "aggregation": "monthly",
+    }
+    resp = client.post("/investigations", json=query)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert [s["variable"] for s in data["series"]] == ["precipitation", "soil_moisture"]
+    assert len(data["series"][0]["points"]) == 120
+    assert data["conclusion"]
+
+
+def test_regions(client):
+    data = client.get("/api/regions").json()
+    assert {r["id"] for r in data["regions"]} >= {"santa_cruz", "chiquitania"}
+    assert {s["id"] for s in data["seasons"]} == {"ANN", "DRY", "FIRE"}
+
+
+def test_regions_lists_years_and_indicators(client):
+    data = client.get("/api/regions").json()
+    assert data["years"] == {
+        "drought": {"start": 1981, "end": 2025},
+        "hotspots": {"start": 2003, "end": 2025},
+    }
+    assert [i["param"] for i in data["indicators"]] == [
+        "PRECTOTCORR", "GWETTOP", "GWETROOT", "EVPTRNS", "T2M_MAX", "RH2M",
+    ]
+    assert all(i["label"] and i["unit"] and i["definition"] for i in data["indicators"])
+
+
+def test_drought_always_reads_the_full_power_period(client, fake_power, monkeypatch):
+    calls = []
+
+    def recording(param, bbox, start, end):
+        calls.append((start, end))
+        return fake_power(param, bbox, start, end)
+
+    monkeypatch.setattr(power, "fetch_regional", recording)
+    data = client.get("/api/drought?start=2000&end=2020").json()
+    # Un solo período para todas las consultas -> una sola caché de POWER
+    assert set(calls) == {(1981, 2025)}
+    years = [p["year"] for p in data["indicators"][0]["series"]]
+    assert years == list(range(2000, 2021))
+
+
+def test_unknown_region_is_404(client):
+    assert client.get("/api/drought?region=mars").status_code == 404
+
+
+def test_bad_years_are_422(client, fake_power):
+    assert client.get("/api/drought?start=2020&end=2010").status_code == 422
+
+
+def test_drought_dashboard(client, fake_power):
+    resp = client.get("/api/drought?region=santa_cruz&season=DRY")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert len(data["indicators"]) == 6
+    by_param = {i["param"]: i for i in data["indicators"]}
+    assert by_param["T2M_MAX"]["points_to_drying"] is True
+    assert by_param["PRECTOTCORR"]["verdict"] == "Real change"
+    assert by_param["RH2M"]["verdict"] != "Real change"
+    assert data["summary"]["pointing_to_drying"] == 5
+    assert data["summary"]["text"].startswith("5 of 6 indicators point to drying")
+    # La lluvia baja todos los años: 2025 es el más seco de los 45 y está por debajo de lo normal.
+    rain = by_param["PRECTOTCORR"]
+    assert rain["baseline"]["start"] == 1991 and rain["baseline"]["end"] == 2020
+    assert rain["rank_of"] == 45
+    last = rain["anomalies"][-1]
+    assert last["year"] == 2025 and last["rank"] == 1 and last["z"] < 0
+    # La temperatura sube: el año más "seco" es el más caluroso, también 2025.
+    assert by_param["T2M_MAX"]["anomalies"][-1]["rank"] == 1
+
+
+def test_anomalies_ignore_the_selected_years(client, fake_power):
+    # El período normal es fijo: 2019 tiene la misma anomalía con cualquier rango.
+    full = client.get("/api/drought?start=1981&end=2025").json()["indicators"][0]
+    short = client.get("/api/drought?start=2010&end=2025").json()["indicators"][0]
+    pick = lambda ind: next(a for a in ind["anomalies"] if a["year"] == 2019)
+    assert pick(full) == pick(short)
+    assert len(short["anomalies"]) == 16
+
+
+def test_hotspots_without_csv_is_503(client, tmp_path, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("DATA_DIR", str(tmp_path))
+    get_settings.cache_clear()
+    try:
+        resp = client.get("/api/hotspots")
+        assert resp.status_code == 503
+        assert "download_firms" in resp.json()["detail"]
+    finally:
+        get_settings.cache_clear()
+
+
+def test_hotspots_trend(client, firms_csv):
+    data = client.get("/api/hotspots?season=FIRE").json()
+    assert data["series"][0] == {"year": 2003, "value": 200}
+    assert data["trend"]["slope_per_decade"] > 0
+    assert data["verdict"] == "Real change"
+    assert data["baseline"]["start"] == 2003 and data["rank_of"] == 23
+    # Los focos suben cada año: el último es el puesto 1 (el de más focos).
+    assert data["anomalies"][-1]["rank"] == 1
+
+
+def test_hotspot_grid(client, firms_csv):
+    data = client.get("/api/hotspots/grid?year=2010&season=FIRE").json()
+    assert data["cells"] == [{"lat": -17.75, "lon": -61.25, "count": 2 * 240}]  # agosto + septiembre
+
+
+def test_lead_uses_previous_wet_season(client, fake_power, firms_csv):
+    data = client.get("/api/lead?season=FIRE").json()
+    assert data["wet_months"] == [10, 11, 12, 1, 2, 3]
+    by_param = {i["param"]: i for i in data["items"]}
+    soil = by_param["GWETTOP"]
+    # 2003 necesita oct-dic de 2002: los 23 años tienen época húmeda completa.
+    assert soil["n_years"] == 23
+    # Suelo cada vez más seco y focos en aumento -> correlación negativa, ya corregida por FDR.
+    assert soil["rho"] < -0.9 and soil["q_value"] is not None
+    assert soil["verdict"] == "Real change"
+
+
+def test_link(client, fake_power, firms_csv):
+    data = client.get("/api/link?season=FIRE&indicator=GWETTOP").json()
+    assert data["n_years"] == 23
+    assert [p["year"] for p in data["points"]] == list(range(2003, 2026))
+    assert data["indicator_unit"] == "0-1"
+    # Suelo cada vez más seco y focos en aumento -> correlación negativa
+    assert data["rho"] < -0.9
+    assert data["caveat"] == "Relationship, not proof of cause."

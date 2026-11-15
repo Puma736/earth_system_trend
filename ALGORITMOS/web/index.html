@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<title>sci_lab_math - Laboratorio Científico</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  body { font-family: Segoe UI, Arial, sans-serif; margin: 0; background: #f5f7fa; color: #222; }
+  header { background: #1f3864; color: #fff; padding: 14px 20px; }
+  .container { display: grid; grid-template-columns: 360px 1fr; gap: 16px; padding: 16px; }
+  .panel { background: #fff; border-radius: 8px; padding: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  label { display: block; font-weight: 600; margin-top: 10px; font-size: 13px; }
+  textarea { width: 100%; height: 200px; font-family: monospace; font-size: 12px; }
+  button { background: #1f3864; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+  button:hover { background: #2e5496; }
+  details { margin-top: 8px; border:1px solid #ddd; border-radius:6px; padding:6px; }
+  summary { font-weight:600; cursor:pointer; }
+  .checks label { font-weight: 400; display:block; margin:2px 0; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th, td { padding:6px; border-bottom:1px solid #eee; text-align:left; }
+  th { background:#1f3864; color:#fff; }
+  .concl { background: #fff; border-radius: 8px; padding: 14px; margin-top: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .concl li { margin: 4px 0; font-size: 13px; }
+  h3 { margin: 6px 0; color: #1f3864; }
+  canvas { max-height: 280px; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<header><h2>sci_lab_math — Laboratorio Científico Universal</h2></header>
+<div class="container">
+  <div class="panel">
+    <label>Entidad</label>
+    <input id="region" value="Santa Cruz - Chiquitania" style="width:100%" />
+    <label>Dominio</label>
+    <select id="domain" style="width:100%">
+      <option value="general">General</option>
+      <option value="clima" selected>Clima</option>
+      <option value="finanzas">Finanzas</option>
+      <option value="industria">Industria/IoT</option>
+    </select>
+    <label>Datos (JSON)</label>
+    <textarea id="data"></textarea>
+    <button onclick="loadExample()">Cargar datos de ejemplo</button>
+    <button onclick="loadNasa()">Cargar ejemplo NASA (temperatura)</button>
+
+    <label>Algoritmos a utilizar (por categoría)</label>
+
+    <details open>
+      <summary>Tendencias</summary>
+      <div class="checks">
+        <label><input type="checkbox" value="linreg" checked> Regresión lineal</label>
+        <label><input type="checkbox" value="mk" checked> Mann-Kendall</label>
+        <label><input type="checkbox" value="sen" checked> Pendiente de Sen</label>
+      </div>
+    </details>
+    <details open>
+      <summary>Anomalías</summary>
+      <div class="checks">
+        <label><input type="checkbox" value="zscore" checked> Z-score</label>
+      </div>
+    </details>
+    <details open>
+      <summary>Relaciones</summary>
+      <div class="checks">
+        <label><input type="checkbox" value="pearson" checked> Pearson</label>
+        <label><input type="checkbox" value="spearman" checked> Spearman</label>
+        <label><input type="checkbox" value="crosslag" checked> Correlación cruzada (lag)</label>
+      </div>
+    </details>
+    <details open>
+      <summary>Puntos de cambio</summary>
+      <div class="checks">
+        <label><input type="checkbox" value="pelt" checked> PELT</label>
+        <label><input type="checkbox" value="cusum" checked> CUSUM</label>
+      </div>
+    </details>
+    <details open>
+      <summary>Pronóstico</summary>
+      <div class="checks">
+        <label><input type="checkbox" value="sarima" checked> ARIMA / SARIMA</label>
+      </div>
+    </details>
+    <details open>
+      <summary>Patrones</summary>
+      <div class="checks">
+        <label><input type="checkbox" value="pca" checked> PCA</label>
+      </div>
+    </details>
+    <details open>
+      <summary>Extensiones</summary>
+      <div class="checks">
+        <label><input type="checkbox" value="series" checked> Series (gráfico)</label>
+        <label><input type="checkbox" value="fft" checked> FFT (frecuencias)</label>
+      </div>
+    </details>
+
+    <button onclick="analyze()">Analizar</button>
+    <div id="status" style="margin-top:8px;font-size:13px;"></div>
+  </div>
+  <div>
+    <div class="panel"><h3>Resultados (tabla única)</h3>
+      <table id="resultsTable"><thead><tr><th>Variable / Par</th><th>Fórmula</th><th>Resultado</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="charts" id="charts"></div>
+    <div class="concl"><h3>Conclusiones científicas</h3><ul id="concl"></ul></div>
+  </div>
+</div>
+
+<script>
+Chart.register({ id:'verticalLine', beforeDraw(chart,args,opts){ const ctx=chart.ctx; const xs=chart.scales.x; (opts.lines||[]).forEach(idx=>{ const x=xs.getPixelForValue(idx); ctx.save(); ctx.beginPath(); ctx.moveTo(x,chart.chartArea.top); ctx.lineTo(x,chart.chartArea.bottom); ctx.strokeStyle='rgba(200,0,0,0.7)'; ctx.lineWidth=2; ctx.stroke(); ctx.restore(); }); } });
+const exampleData = (function(){
+  const rng = (s)=>{ let x=s; return ()=>{ x=(x*9301+49297)%233280; return x/233280; }; };
+  const r = rng(42);
+  const n=60;
+  const dates=[]; const precip=[]; const temp=[]; const soil=[];
+  for(let i=0;i<n;i++){
+    const d=new Date(2019,0+i,1);
+    dates.push(d.toISOString().slice(0,10));
+    const season=Math.sin(2*Math.PI*i/12);
+    let p=80+60*season + (r()*30-15);
+    let t=26+4*Math.cos(2*Math.PI*i/12)+(r()*2.4-1.2);
+    let s=30+10*season+(r()*8-4);
+    if(i>=42){
+      const ramp=(i-42)/18;
+      p=p*(1-0.5*ramp)+(r()*10-5);
+      s=s-10*ramp+(r()*4-2);
+      t=t+1.5*ramp+(r()*1.2-0.6);
+    }
+    precip.push(Math.max(0,p)); temp.push(t); soil.push(Math.max(3,s));
+  }
+  return { region:"Santa Cruz - Chiquitania", dates, variables:{precipitacion:precip, temperatura:temp, humedad_suelo:soil} };
+})();
+
+function loadExample(){
+  document.getElementById('data').value = JSON.stringify(exampleData, null, 2);
+  document.getElementById('domain').value = 'clima';
+}
+
+function loadNasa(){
+  const rng = (s)=>{ let x=s; return ()=>{ x=(x*9301+49297)%233280; return x/233280; }; };
+  const r = rng(99);
+  const n=120;
+  const dates=[]; const lst=[]; const ndvi=[]; const precip=[];
+  for(let i=0;i<n;i++){
+    const d=new Date(2014,0+i,1);
+    dates.push(d.toISOString().slice(0,10));
+    const season=Math.sin(2*Math.PI*i/12);
+    let t=298 + 8*season + (r()*2-1) + 0.03*i;
+    let v=0.55 + 0.2*season + (r()*0.06-0.03) - 0.001*i;
+    let p=70 + 50*season + (r()*20-10);
+    lst.push(+t.toFixed(2)); ndvi.push(Math.max(0.1,+v.toFixed(3))); precip.push(Math.max(0,+p.toFixed(1)));
+  }
+  const data = { entity_name:"Region NASA LST", dates, variables:{ temperatura_superficial_K:lst, ndvi:ndvi, precipitacion_mm:precip } };
+  document.getElementById('data').value = JSON.stringify(data, null, 2);
+  document.getElementById('domain').value = 'clima';
+}
+
+let charts = {};
+let lastInput = null;
+function makeChart(id, config){
+  const ctx = document.getElementById(id).getContext('2d');
+  if(charts[id]) charts[id].destroy();
+  charts[id] = new Chart(ctx, config);
+}
+
+function selected(){ return [...document.querySelectorAll('.checks input:checked')].map(c=>c.value); }
+
+function addChartPanel(id, title){
+  const cont = document.getElementById('charts');
+  const div = document.createElement('div');
+  div.className='panel';
+  div.innerHTML = '<h3>'+title+'</h3><canvas id="'+id+'"></canvas>';
+  cont.appendChild(div);
+}
+
+function analyze(){
+  let payload;
+  try { payload = JSON.parse(document.getElementById('data').value); }
+  catch(e){ document.getElementById('status').textContent='JSON inválido'; return; }
+  payload.entity_name = document.getElementById('region').value;
+  payload.domain = document.getElementById('domain').value;
+  lastInput = payload;
+  document.getElementById('status').textContent='Analizando...';
+  fetch('/api/analyze', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) })
+    .then(r=>r.json()).then(res=>{ render(res); document.getElementById('status').textContent='OK'; })
+    .catch(e=>{ document.getElementById('status').textContent='Error: '+e; });
+}
+
+function render(res){
+  const sel = selected();
+  const tbody = document.querySelector('#resultsTable tbody');
+  tbody.innerHTML = '';
+  const chartsDiv = document.getElementById('charts');
+  chartsDiv.innerHTML = '';
+  // destroy old charts
+  Object.keys(charts).forEach(k=>{ if(charts[k]) charts[k].destroy(); delete charts[k]; });
+
+  function row(v, formula, value){
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td style="padding:6px;border-bottom:1px solid #eee;">'+v+'</td><td style="padding:6px;border-bottom:1px solid #eee;">'+formula+'</td><td style="padding:6px;border-bottom:1px solid #eee;">'+value+'</td>';
+    tbody.appendChild(tr);
+  }
+
+  const vars = res.variables;
+  const colors = ['#1f3864','#c00000','#2e7d32','#ff9800','#6a1b9a','#00838f'];
+
+  // Series chart
+  if(sel.includes('series') && lastInput){
+    addChartPanel('c_series','Series temporales (todas las variables)');
+    const vnames = Object.keys(lastInput.variables || {});
+    const labels = lastInput.dates || lastInput.variables[vnames[0]].map((_,i)=>i);
+    const datasets = vnames.map((v,i)=>({ label:v, data:lastInput.variables[v], borderColor:colors[i%colors.length], backgroundColor:colors[i%colors.length], tension:0.2, fill:false }));
+    makeChart('c_series', { type:'line', data:{ labels, datasets }, options:{responsive:true, interaction:{mode:'index',intersect:false} } });
+  }
+
+  if(sel.includes('linreg') || sel.includes('sen')){
+    vars.forEach(v=> row(v,'Regresión lineal','pendiente='+res.trends[v].linear_regression.slope.toFixed(4)+', R²='+res.trends[v].linear_regression.r_squared.toFixed(3)+', p='+res.trends[v].linear_regression.p_value.toFixed(4)+', norm_slope='+res.trends[v].linear_regression.normalized_slope.toFixed(4)));
+    // Grafico 1: tendencias normalizadas
+    addChartPanel('c_norm','Tendencias normalizadas (slope en desvíos std/paso)');
+    makeChart('c_norm',{type:'bar',data:{labels:vars,datasets:[{label:'normalized_slope',data:vars.map(v=>res.trends[v].linear_regression.normalized_slope),backgroundColor:vars.map(v=>res.trends[v].linear_regression.significant?'#1f3864':'#90caf9')}]},options:{responsive:true,plugins:{tooltip:{callbacks:{label:(ctx)=>{const v=vars[ctx.dataIndex];const lr=res.trends[v].linear_regression;return ['norm_slope: '+lr.normalized_slope.toFixed(4),'slope real: '+lr.slope.toFixed(4)+' (unid/paso)','p_value: '+lr.p_value.toFixed(4),'significativa: '+(lr.significant?'sí':'no')];}}}}}});
+    // Grafico 2: serie + recta + cambio + pronostico
+    const panel = document.createElement('div'); panel.className='panel'; panel.innerHTML = '<h3>Serie temporal + recta de regresión + pronóstico</h3><label>Variable:</label><select id="trendVarSelect" style="width:100%"></select><canvas id="c_trendDetail"></canvas>'; chartsDiv.appendChild(panel);
+    const selEl = document.getElementById('trendVarSelect');
+    vars.forEach(v=>{ const opt=document.createElement('option'); opt.value=v; opt.textContent=v; selEl.appendChild(opt); });
+    function drawDetail(){
+      const v = selEl.value;
+      const lr = res.trends[v].linear_regression;
+      const series = res.series.values[v];
+      const dates = res.series.dates;
+      const fc = res.forecast[v];
+      const cp = (res.changepoints[v].cusum.change_index!=null)? res.changepoints[v].cusum.change_index : null;
+      const n = series.length;
+      const hist = series.slice();
+      const fitted = lr.fitted_line.slice();
+      const forecastArr = fc && !fc.error ? Array(n).fill(null).concat(fc.forecast) : [];
+      const upperArr = fc && !fc.error ? Array(n).fill(null).concat(fc.upper) : [];
+      const lowerArr = fc && !fc.error ? Array(n).fill(null).concat(fc.lower) : [];
+      const labels = dates.concat(fc && !fc.error ? fc.forecast.map((_,i)=>'f'+(i+1)) : []);
+      const datasets = [
+        { label:'Histórica', data: hist, borderColor:'#1f3864', tension:0.2, fill:false },
+        { label:'Recta de regresión', data: fitted, borderColor:'#c00000', borderDash:[6,4], tension:0, fill:false },
+      ];
+      if(fc && !fc.error){
+        datasets.push({ label:'Pronóstico', data: forecastArr, borderColor:'#2e7d32', borderDash:[2,2], tension:0.2, fill:false });
+        datasets.push({ label:'Banda superior', data: upperArr, borderColor:'rgba(46,125,50,0.3)', fill:false, pointRadius:0 });
+        datasets.push({ label:'Banda inferior', data: lowerArr, borderColor:'rgba(46,125,50,0.3)', backgroundColor:'rgba(46,125,50,0.15)', fill:'-1', pointRadius:0 });
+      }
+      makeChart('c_trendDetail', { type:'line', data:{ labels, datasets }, options:{ responsive:true, plugins:{ legend:{position:'top'}, verticalLine:{ lines: cp!=null?[cp]:[] } } } });
+    }
+    selEl.onchange = drawDetail;
+    drawDetail();
+  }
+  if(sel.includes('mk')) vars.forEach(v=> row(v,'Mann-Kendall','trend='+res.trends[v].mann_kendall.trend+', p='+res.trends[v].mann_kendall.p_value.toFixed(4)+', tau='+res.trends[v].mann_kendall.tau.toFixed(3)));
+  if(sel.includes('sen')){ vars.forEach(v=> row(v,'Pendiente de Sen','slope='+res.trends[v].sens_slope.slope.toFixed(4))); addChartPanel('c_sen','Pendiente de Sen'); makeChart('c_sen',{type:'bar',data:{labels:vars,datasets:[{label:'Sen slope',data:vars.map(v=>res.trends[v].sens_slope.slope),backgroundColor:'#2e7d32'}]},options:{responsive:true}}); }
+  if(sel.includes('zscore')){ vars.forEach(v=> row(v,'Z-score (anomalías)','n_anom='+res.anomalies[v].n_anomalies_z2+', último Z='+(res.anomalies[v].last_z_score!=null? res.anomalies[v].last_z_score.toFixed(2):'NA'))); addChartPanel('c_z','Anomalías (Z-score último)'); makeChart('c_z',{type:'bar',data:{labels:vars,datasets:[{label:'Último Z',data:vars.map(v=>res.anomalies[v].last_z_score),backgroundColor:'#c00000'}]},options:{responsive:true}}); }
+  if(sel.includes('pearson')){ Object.keys(res.relations).forEach(k=> row(k.replace('__vs__',' vs '),'Pearson','r='+res.relations[k].pearson.r.toFixed(4)+', p='+res.relations[k].pearson.p_value.toFixed(4))); addChartPanel('c_pears','Correlaciones Pearson'); const keys=Object.keys(res.relations); makeChart('c_pears',{type:'bar',data:{labels:keys.map(k=>k.replace('__vs__',' vs ')),datasets:[{label:'r',data:keys.map(k=>res.relations[k].pearson.r),backgroundColor:'#1565c0'}]},options:{responsive:true,scales:{y:{min:-1,max:1}}}}); }
+  if(sel.includes('spearman')){ Object.keys(res.relations).forEach(k=> row(k.replace('__vs__',' vs '),'Spearman','rho='+res.relations[k].spearman.rho.toFixed(4)+', p='+res.relations[k].spearman.p_value.toFixed(4))); addChartPanel('c_spear','Correlaciones Spearman'); const keys=Object.keys(res.relations); makeChart('c_spear',{type:'bar',data:{labels:keys.map(k=>k.replace('__vs__',' vs ')),datasets:[{label:'rho',data:keys.map(k=>res.relations[k].spearman.rho),backgroundColor:'#6a1b9a'}]},options:{responsive:true,scales:{y:{min:-1,max:1}}}}); }
+  if(sel.includes('crosslag')) Object.keys(res.relations).forEach(k=> { const bl=res.relations[k].best_lag; row(k.replace('__vs__',' vs '),'Correlación cruzada (lag)','lag='+bl.lag+', r='+(bl.correlation!=null? bl.correlation.toFixed(4):'NA')); });
+  if(sel.includes('pelt')) vars.forEach(v=> row(v,'PELT','breakpoints='+JSON.stringify(res.changepoints[v].pelt.breakpoints)));
+  if(sel.includes('cusum')){ vars.forEach(v=> row(v,'CUSUM','change_index='+res.changepoints[v].cusum.change_index)); addChartPanel('c_cusum','CUSUM (índice de cambio)'); makeChart('c_cusum',{type:'bar',data:{labels:vars,datasets:[{label:'change_index',data:vars.map(v=>res.changepoints[v].cusum.change_index),backgroundColor:'#7b1fa2'}]},options:{responsive:true}}); }
+  if(sel.includes('sarima')){ vars.forEach(v=>{ const fc=res.forecast[v]; if(fc && !fc.error){ const mean=(fc.forecast.reduce((a,b)=>a+b,0)/fc.forecast.length).toFixed(3); row(v,'Pronóstico (ARIMA/SARIMA)','media proyectada='+mean+', AIC='+fc.aic.toFixed(2)); } }); addChartPanel('c_fc','Pronóstico (media proyectada vs histórica)'); makeChart('c_fc',{type:'bar',data:{labels:vars,datasets:[{label:'Histórica',data:vars.map(v=>res.anomalies[v].mean),backgroundColor:'#90caf9'},{label:'Proyectada',data:vars.map(v=>{const f=res.forecast[v].forecast;return f.reduce((a,b)=>a+b,0)/f.length;}),backgroundColor:'#1f3864'}]},options:{responsive:true}}); }
+  if(sel.includes('pca')){ const ev=res.patterns.pca.explained_variance_ratio||[]; ev.forEach((e,i)=> row('PCA','Componente '+(i+1),'varianza explicada='+(e*100).toFixed(2)+'%')); addChartPanel('c_pca','PCA (varianza explicada)'); makeChart('c_pca',{type:'bar',data:{labels:ev.map((_,i)=>'PC'+(i+1)),datasets:[{label:'Varianza',data:ev,backgroundColor:'#ff9800'}]},options:{responsive:true}}); }
+  if(sel.includes('fft')){ const fft=res.extensions && res.extensions.fft; if(fft && fft.top_frequencies){ fft.top_frequencies.forEach((f,i)=> row('FFT','Frecuencia '+(i+1),'freq='+f[0].toFixed(4)+', amp='+f[1].toFixed(4))); addChartPanel('c_fft','FFT (amplitudes dominantes)'); makeChart('c_fft',{type:'bar',data:{labels:fft.top_frequencies.map((f,i)=>'f'+(i+1)),datasets:[{label:'Amplitud',data:fft.top_frequencies.map(f=>f[1]),backgroundColor:'#00838f'}]},options:{responsive:true}}); } }
+
+  const ul = document.getElementById('concl');
+  ul.innerHTML = '';
+  (res.conclusiones_cientificas||[]).forEach(c=>{ const li=document.createElement('li'); li.textContent=c; ul.appendChild(li); });
+}
+
+loadExample();
+</script>
+</body>
+</html>
