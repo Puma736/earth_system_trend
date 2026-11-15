@@ -1,0 +1,11 @@
+# Solo aplica al proyecto del backend (Root Directory = raíz del repo).
+# El backend necesita front/data/bolivia-admin.json; el resto del front no.
+front/*
+!front/data
+docs
+ALGORITMOS
+scripts
+backend/tests
+backend/scripts
+backend/.venv
+**/__pycache__

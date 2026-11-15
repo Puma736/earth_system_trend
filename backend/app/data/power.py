@@ -59,18 +59,47 @@ DROUGHT_INDICATORS: dict[str, Indicator] = {
 # Descarga y caché
 # ---------------------------------------------------------------------------
 
-def _cache_path(kind: str, key: dict) -> Path:
-    settings = get_settings()
+def _cache_name(kind: str, key: dict) -> str:
     digest = hashlib.sha1(json.dumps(key, sort_keys=True).encode()).hexdigest()[:16]
-    folder = settings.cache_dir / "power"
-    folder.mkdir(parents=True, exist_ok=True)
-    return folder / f"{kind}_{key.get('parameters', 'x')}_{digest}.json"
+    return f"{kind}_{key.get('parameters', 'x')}_{digest}.json"
+
+
+def _cache_dirs() -> list[Path]:
+    """Carpetas de caché en orden de lectura: la precalentada del repo y la de /tmp."""
+    settings = get_settings()
+    return [settings.cache_dir / "power", settings.cache_fallback_dir / "power"]
+
+
+def _cache_path(kind: str, key: dict) -> Path:
+    return _cache_dirs()[0] / _cache_name(kind, key)
+
+
+def _read_cache(name: str) -> dict | None:
+    for folder in _cache_dirs():
+        try:
+            return json.loads((folder / name).read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+    return None
+
+
+def _write_cache(name: str, payload: dict) -> None:
+    """Escribe en la primera carpeta que lo permita. En Vercel el repo es de solo lectura."""
+    text = json.dumps(payload)
+    for folder in _cache_dirs():
+        try:
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / name).write_text(text, encoding="utf-8")
+            return
+        except OSError:  # incluye PermissionError y sistema de archivos de solo lectura
+            continue
 
 
 def _get_json(url: str, params: dict, kind: str) -> dict:
-    path = _cache_path(kind, {"url": url, **params})
-    if path.exists():
-        return json.loads(path.read_text(encoding="utf-8"))
+    name = _cache_name(kind, {"url": url, **params})
+    cached = _read_cache(name)
+    if cached is not None:
+        return cached
 
     settings = get_settings()
     try:
@@ -80,7 +109,7 @@ def _get_json(url: str, params: dict, kind: str) -> dict:
     except (httpx.HTTPError, ValueError) as exc:
         raise DataSourceError(f"NASA POWER request failed: {exc}") from exc
 
-    path.write_text(json.dumps(payload), encoding="utf-8")
+    _write_cache(name, payload)
     return payload
 
 

@@ -1,0 +1,11 @@
+# Dependencias del backend en Vercel (función serverless api/index.py).
+# Es backend/requirements.txt sin uvicorn, pytest ni las librerías opcionales de
+# /investigations (pandas, scikit-learn, statsmodels, ruptures, pykrige): sin ellas
+# investigate.py usa su versión en Python puro ("engine": "local") y la función
+# queda dentro del límite de tamaño de Vercel.
+fastapi>=0.115,<1.0
+pydantic-settings>=2.6,<3.0
+httpx>=0.28,<1.0
+numpy>=2.0,<3.0
+scipy>=1.13,<2.0
+pymannkendall>=1.4.3,<2.0

@@ -4,8 +4,8 @@ __pycache__/
 .pytest_cache/
 .env
 
-# Caché de respuestas de POWER (se regenera sola)
-.cache/
+# Caché de respuestas de POWER. Se versiona precalentada (python -m scripts.warm_cache)
+# para que Vercel, que es de solo lectura, no tenga que descargarla en la primera consulta.
 
 # Respuestas crudas de FIRMS (pueden pesar mucho; solo se versiona el CSV agregado)
 data/firms_raw/

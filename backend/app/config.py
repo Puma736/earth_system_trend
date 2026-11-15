@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     ]
     data_dir: Path = BACKEND_DIR / "data"
     cache_dir: Path = BACKEND_DIR / ".cache"
+    # En serverless (Vercel) solo se puede escribir en /tmp: la caché nueva va aquí
+    # cuando cache_dir es de solo lectura. La lectura siempre prueba cache_dir primero.
+    cache_fallback_dir: Path = Path("/tmp/.cache")
     power_base_url: str = "https://power.larc.nasa.gov/api/temporal/monthly"
     power_timeout_s: float = 60.0
 
