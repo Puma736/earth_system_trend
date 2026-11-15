@@ -1,11 +1,9 @@
-import { demoCatalog } from "./catalog";
-import { buildDemoResult } from "./demo";
 import type { Catalog, InvestigationQuery, InvestigationResult } from "./types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 /**
- * Contrato previsto del backend FastAPI:
+ * Contrato del backend FastAPI:
  * GET  /health
  * GET  /catalog                 -> Catalog
  *   departments y provinces son opcionales; el mapa lee los limites locales.
@@ -13,29 +11,27 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
  *   El cuerpo siempre incluye department_id, province_id y place.
  *   place es { name, lat, lon } o null. Los ids van en null si no hay seleccion.
  *
- * NEXT_PUBLIC_DATA_SOURCE=api usa esas rutas.
- * Cualquier otro valor usa el adaptador de demostración.
+ * El navegador solo muestra la respuesta. Series, pruebas y conclusiones salen del servidor.
  */
-export function dataSource(): "demo" | "api" {
-  return process.env.NEXT_PUBLIC_DATA_SOURCE === "api" ? "api" : "demo";
+export function dataSource(): "api" {
+  return "api";
 }
 
 export async function fetchCatalog(): Promise<Catalog> {
-  if (dataSource() === "demo") return demoCatalog;
   const response = await request("/catalog");
   return (await response.json()) as Catalog;
 }
 
 export async function runInvestigation(query: InvestigationQuery): Promise<InvestigationResult> {
-  if (dataSource() === "demo") {
-    await delay(350);
-    return buildDemoResult(query);
-  }
-  const response = await request("/investigations", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(query),
-  });
+  const response = await request(
+    "/investigations",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(query),
+    },
+    120000,
+  );
   const result = (await response.json()) as InvestigationResult;
   return { ...result, source: "api" };
 }
@@ -71,10 +67,4 @@ async function request(path: string, init: RequestInit = {}, timeoutMs = 8000): 
   } finally {
     clearTimeout(timer);
   }
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
 }

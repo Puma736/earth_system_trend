@@ -24,7 +24,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import { PlaceSearch } from "@/components/place-search";
 import { TrendMap } from "@/components/trend-map";
-import { checkHealth, dataSource, fetchCatalog, runInvestigation } from "@/lib/api";
+import { checkHealth, fetchCatalog, runInvestigation } from "@/lib/api";
 import { findAdmin, territoryIndex } from "@/lib/bolivia";
 import type {
   Aggregation,
@@ -43,7 +43,7 @@ const SERIES_STYLE: Record<VariableId, { color: string; strokeDasharray?: string
   temperature: { color: "#A0A0A5" },
   ndvi: { color: "#CBD931", strokeDasharray: "5 4" },
   soil_moisture: { color: "#A0A0A5", strokeDasharray: "2 3" },
-  wind: { color: "#CBD931", strokeDasharray: "1 3" },
+  lst: { color: "#CBD931", strokeDasharray: "1 3" },
 };
 
 type Scale = "z" | "value";
@@ -55,7 +55,7 @@ export function Workstation() {
   const [health, setHealth] = useState<"checking" | "up" | "down">("checking");
   const [regionId, setRegionId] = useState("bolivia");
   const [caseId, setCaseId] = useState<CaseId>("drought");
-  const [questionId, setQuestionId] = useState("onset");
+  const [questionId, setQuestionId] = useState("trend");
   const [variables, setVariables] = useState<VariableId[]>([
     "precipitation",
     "soil_moisture",
@@ -113,15 +113,20 @@ export function Workstation() {
       scale === "value"
         ? result.series.filter((item) => item.variable === result.map_variable)
         : result.series;
-    const length = shown[0]?.points.length ?? 0;
+    const length = shown.reduce(
+      (max, series) => Math.max(max, series.points.length + (series.forecast?.length ?? 0)),
+      0,
+    );
     return Array.from({ length }, (_, index) => {
-      const row: Record<string, string | number> = { date: shown[0].points[index].date };
+      const row: Record<string, string | number> = { date: "" };
       for (const series of shown) {
-        const point = series.points[index];
+        const point = pointAt(series, index);
+        if (!point) continue;
+        if (!row.date) row.date = point.date;
         row[series.variable] = scale === "value" ? point.value : Number(point.z.toFixed(2));
       }
       return row;
-    });
+    }).filter((row) => row.date !== "");
   }, [result, scale]);
 
   const chartSeries = useMemo(() => {
@@ -172,7 +177,7 @@ export function Workstation() {
   }
 
   const rangeInvalid = startYear > endYear;
-  const sourceLabel = dataSource() === "api" ? "Servidor" : "Demostración";
+  const sourceLabel = "Servidor";
   const departmentFeature = findAdmin(departmentId);
   const provinceFeature =
     findAdmin(provinceId)?.properties.department_id === departmentId ? findAdmin(provinceId) : null;
@@ -413,8 +418,8 @@ export function Workstation() {
                     : "El mapa se llena al investigar. Cada círculo es una zona."}
                 </Text>
                 <Group gap="lg">
-                  <LegendSwatch tone="high" label="Por encima de lo habitual" />
-                  <LegendSwatch tone="low" label="Por debajo de lo habitual" />
+                  <LegendSwatch tone="high" label="Por encima de cero" />
+                  <LegendSwatch tone="low" label="Por debajo de cero" />
                   {result?.hotspots.length ? <LegendSwatch tone="hot" label="Foco" /> : null}
                   {place ? <LegendSwatch tone="place" label="Lugar buscado" /> : null}
                 </Group>
@@ -432,7 +437,8 @@ export function Workstation() {
                   <div>
                     <Text className="eyebrow">Análisis y escalas</Text>
                     <Text size="sm">
-                      Comparada usa anomalías estandarizadas. Unidad propia muestra una variable.
+                      Comparada usa el Z-score de toda la serie. Unidad propia muestra una variable.
+                      La proyección, si la pregunta la pide, sigue a la derecha de la serie.
                     </Text>
                   </div>
                 </Group>
@@ -483,51 +489,18 @@ export function Workstation() {
                 <div>
                   <Text className="eyebrow">Estadística</Text>
                   {result ? (
-                    <Table withRowBorders={false} verticalSpacing="xs" mt="xs">
-                      <Table.Thead>
-                        <Table.Tr>
-                          <Table.Th>Variable</Table.Th>
-                          <Table.Th>Por década</Table.Th>
-                          <Table.Th>p</Table.Th>
-                          <Table.Th>Resultado</Table.Th>
-                        </Table.Tr>
-                      </Table.Thead>
-                      <Table.Tbody>
-                        {result.statistics.map((stat) => (
-                          <Table.Tr key={stat.variable}>
-                            <Table.Td>{names.get(stat.variable) ?? stat.variable}</Table.Td>
-                            <Table.Td ff="monospace">
-                              {stat.slope_per_decade > 0 ? "+" : ""}
-                              {stat.slope_per_decade.toFixed(2)}
-                            </Table.Td>
-                            <Table.Td ff="monospace">{formatP(stat.p_value)}</Table.Td>
-                            <Table.Td>
-                              {stat.n < 8
-                                ? "Intervalo corto"
-                                : stat.significant
-                                  ? "Significativa"
-                                  : "No significativa"}
-                            </Table.Td>
-                          </Table.Tr>
-                        ))}
-                      </Table.Tbody>
-                    </Table>
+                    <StatTable result={result} names={names} />
                   ) : (
                     <Text size="sm" mt="xs">
-                      Mann-Kendall y la pendiente de Theil-Sen aparecen aquí.
+                      Mann-Kendall, la pendiente de Sen, el Z-score y el CUSUM aparecen aquí.
                     </Text>
                   )}
-                  {result ? (
-                    <Text size="xs" mt={6}>
-                      Prueba de Mann-Kendall sobre la anomalía. n = {result.statistics[0]?.n ?? 0}.
-                    </Text>
-                  ) : null}
                 </div>
                 <Box id="conclusion" className="conclusion">
                   <Text className="eyebrow">Conclusión</Text>
                   <Text className="finding" mt="xs">
                     {result?.conclusion ??
-                      "La conclusión va a decir el orden en el tiempo, no una causa."}
+                      "La conclusión va a describir la serie observada. No va a afirmar una causa."}
                   </Text>
                   <Text size="sm" mt="sm">
                     {result?.caveat ??
@@ -541,6 +514,212 @@ export function Workstation() {
       </AppShell.Main>
     </AppShell>
   );
+}
+
+function pointAt(series: { points: { date: string; value: number; z: number }[]; forecast?: { date: string; value: number; z: number }[] }, index: number) {
+  if (index < series.points.length) return series.points[index];
+  return series.forecast?.[index - series.points.length];
+}
+
+function StatTable({
+  result,
+  names,
+}: {
+  result: InvestigationResult;
+  names: Map<string, string>;
+}) {
+  const question = result.query.question_id;
+  if (question === "anomaly") {
+    return (
+      <>
+        <Table withRowBorders={false} verticalSpacing="xs" mt="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Variable</Table.Th>
+              <Table.Th>|Z| &gt; 2</Table.Th>
+              <Table.Th>Último Z</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {result.statistics.map((stat) => (
+              <Table.Tr key={stat.variable}>
+                <Table.Td>{names.get(stat.variable) ?? stat.variable}</Table.Td>
+                <Table.Td ff="monospace">{stat.n_anomalies}</Table.Td>
+                <Table.Td ff="monospace">{formatSigned(stat.last_z, 2)}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+        <Text size="xs" mt={6}>
+          Anomalía si el Z-score poblacional supera 2 en valor absoluto. n = {result.statistics[0]?.n ?? 0}.
+        </Text>
+      </>
+    );
+  }
+  if (question === "change") {
+    return (
+      <>
+        <Table withRowBorders={false} verticalSpacing="xs" mt="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Variable</Table.Th>
+              <Table.Th>Fecha CUSUM</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {result.statistics.map((stat) => (
+              <Table.Tr key={stat.variable}>
+                <Table.Td>{names.get(stat.variable) ?? stat.variable}</Table.Td>
+                <Table.Td ff="monospace">{stat.change_date ?? "n/d"}</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+        <Text size="xs" mt={6}>
+          Fecha donde la suma acumulada de la desviación respecto a la media es máxima.
+        </Text>
+      </>
+    );
+  }
+  if (question === "forecast") {
+    return (
+      <>
+        <Table withRowBorders={false} verticalSpacing="xs" mt="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Variable</Table.Th>
+              <Table.Th>Histórica</Table.Th>
+              <Table.Th>Proyectada</Table.Th>
+              <Table.Th>Diferencia</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {result.statistics.map((stat) => (
+              <Table.Tr key={stat.variable}>
+                <Table.Td>{names.get(stat.variable) ?? stat.variable}</Table.Td>
+                <Table.Td ff="monospace">{stat.mean.toFixed(2)}</Table.Td>
+                <Table.Td ff="monospace">{stat.projected_mean.toFixed(2)}</Table.Td>
+                <Table.Td ff="monospace">{formatSigned(stat.projected_pct, 1)}%</Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+        <Text size="xs" mt={6}>
+          La media proyectada la calcula el servidor: pendiente de Sen, o ARIMA/SARIMA si el laboratorio está instalado. No es una causa.
+        </Text>
+      </>
+    );
+  }
+  if (question === "lag") {
+    return (
+      <>
+        <Table withRowBorders={false} verticalSpacing="xs" mt="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Par</Table.Th>
+              <Table.Th>Desfase</Table.Th>
+              <Table.Th>r</Table.Th>
+              <Table.Th>p</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {result.relations.length === 0 ? (
+              <Table.Tr>
+                <Table.Td colSpan={4}>Sin un desfase con |r| mayor que 0.4.</Table.Td>
+              </Table.Tr>
+            ) : (
+              result.relations.map((relation) => (
+                <Table.Tr key={`${relation.driver}-${relation.response}`}>
+                  <Table.Td>
+                    {(names.get(relation.driver) ?? relation.driver).slice(0, 12)} →{" "}
+                    {(names.get(relation.response) ?? relation.response).slice(0, 12)}
+                  </Table.Td>
+                  <Table.Td ff="monospace">
+                    {relation.lag === 0 ? "0" : relation.lag} {relation.lag_unit === "years" ? "a" : "m"}
+                  </Table.Td>
+                  <Table.Td ff="monospace">{relation.r.toFixed(2)}</Table.Td>
+                  <Table.Td ff="monospace">{formatP(relation.p_value)}</Table.Td>
+                </Table.Tr>
+              ))
+            )}
+          </Table.Tbody>
+        </Table>
+        <Text size="xs" mt={6}>
+          El desfase de mayor |r| entre cada par. No demuestra que una variable cause la otra.
+        </Text>
+      </>
+    );
+  }
+  if (question === "pattern") {
+    const share =
+      result.pattern.pc1_share === null
+        ? "n/d"
+        : `${(result.pattern.pc1_share * 100).toFixed(1)}%`;
+    const period =
+      result.pattern.period_steps === null
+        ? "n/d"
+        : `${result.pattern.period_steps} ${result.pattern.period_unit === "years" ? "años" : "meses"}`;
+    return (
+      <>
+        <Table withRowBorders={false} verticalSpacing="xs" mt="xs">
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Pieza</Table.Th>
+              <Table.Th>Resultado</Table.Th>
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            <Table.Tr>
+              <Table.Td>Primer componente</Table.Td>
+              <Table.Td ff="monospace">{share} de la varianza</Table.Td>
+            </Table.Tr>
+            <Table.Tr>
+              <Table.Td>Ciclo de {names.get(result.pattern.variable) ?? result.pattern.variable}</Table.Td>
+              <Table.Td ff="monospace">{period}</Table.Td>
+            </Table.Tr>
+          </Table.Tbody>
+        </Table>
+        <Text size="xs" mt={6}>
+          PCA sobre las variables estandarizadas. La frecuencia sale de la FFT de la serie del mapa.
+        </Text>
+      </>
+    );
+  }
+  return (
+    <>
+      <Table withRowBorders={false} verticalSpacing="xs" mt="xs">
+        <Table.Thead>
+          <Table.Tr>
+            <Table.Th>Variable</Table.Th>
+            <Table.Th>Sen / periodo</Table.Th>
+            <Table.Th>p</Table.Th>
+            <Table.Th>Resultado</Table.Th>
+          </Table.Tr>
+        </Table.Thead>
+        <Table.Tbody>
+          {result.statistics.map((stat) => (
+            <Table.Tr key={stat.variable}>
+              <Table.Td>{names.get(stat.variable) ?? stat.variable}</Table.Td>
+              <Table.Td ff="monospace">{formatSigned(stat.slope_per_step, 4)}</Table.Td>
+              <Table.Td ff="monospace">{formatP(stat.p_value)}</Table.Td>
+              <Table.Td>
+                {stat.n < 4 ? "Pocas observaciones" : stat.significant ? "Significativa" : "No significativa"}
+              </Table.Td>
+            </Table.Tr>
+          ))}
+        </Table.Tbody>
+      </Table>
+      <Text size="xs" mt={6}>
+        Mann-Kendall sobre la serie, no sobre el residuo estacional. n = {result.statistics[0]?.n ?? 0}.
+      </Text>
+    </>
+  );
+}
+
+function formatSigned(value: number, digits: number): string {
+  if (!Number.isFinite(value)) return "n/d";
+  const text = value.toFixed(digits);
+  return value > 0 ? `+${text}` : text;
 }
 
 function LegendSwatch({ tone, label }: { tone: "high" | "low" | "hot" | "place"; label: string }) {

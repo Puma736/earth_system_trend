@@ -3,9 +3,9 @@ export type VariableId =
   | "temperature"
   | "ndvi"
   | "soil_moisture"
-  | "wind";
+  | "lst";
 
-export type CaseId = "drought" | "fire" | "open";
+export type CaseId = "drought" | "heat" | "signal";
 
 export type Aggregation = "monthly" | "annual";
 
@@ -90,6 +90,8 @@ export interface Series {
   variable: VariableId;
   unit: string;
   points: SeriesPoint[];
+  /** Prolongación de la pendiente de Sen. Solo viene en la pregunta de proyección. */
+  forecast?: SeriesPoint[];
 }
 
 export interface MapCell {
@@ -104,11 +106,28 @@ export interface MapCell {
 export interface TrendStat {
   variable: VariableId;
   test: "mann_kendall";
+  /** Pendiente de Sen por década, para lectura larga. */
   slope_per_decade: number;
+  /** Pendiente de Sen por periodo, como la publica el laboratorio. */
+  slope_per_step: number;
   p_value: number;
   significant: boolean;
   n: number;
   direction: "up" | "down" | "flat";
+  r_squared: number;
+  n_anomalies: number;
+  last_z: number;
+  change_date: string | null;
+  mean: number;
+  projected_mean: number;
+  projected_pct: number;
+}
+
+export interface PatternSummary {
+  pc1_share: number | null;
+  period_steps: number | null;
+  period_unit: "months" | "years";
+  variable: VariableId;
 }
 
 export interface LagRelation {
@@ -129,7 +148,7 @@ export interface Hotspot {
 }
 
 export interface EventWindow {
-  kind: "drought" | "fire_favorable";
+  kind: "drought" | "thermal_stress";
   start: string;
   end: string;
   duration: number;
@@ -152,6 +171,7 @@ export interface InvestigationResult {
   sequence_label: string;
   event: EventWindow | null;
   hotspots: Hotspot[];
+  pattern: PatternSummary;
   conclusion: string;
   caveat: string;
   source: "demo" | "api";
