@@ -10,7 +10,8 @@ import math
 
 from app import schemas
 from app.data import firms, power
-from app.regions import REGIONS, SEASONS, Region, Season
+from app.data.provinces import covers_department
+from app.regions import BBox, REGIONS, SEASONS, Region, Season
 from app.stats import anomaly
 from app.stats.trend import ALPHA, MIN_YEARS, TrendResult, fdr, spearman, trend
 
@@ -96,8 +97,16 @@ def drought_series(param: str, region: Region, season: Season, start: int, end: 
 
 def drought_record(param: str, region: Region, season: Season) -> dict[int, float]:
     """Promedio de la época por año en todo el registro (1981-2025)."""
-    monthly = power.fetch_regional(param, region.bbox, power.FIRST_YEAR, power.LAST_YEAR)
-    return power.seasonal_series(monthly, season.months)
+    return power.seasonal_series(_monthly(param, region), season.months)
+
+
+def _monthly(param: str, region: Region):
+    """Serie mensual del lugar: celda MERRA-2 si el área es chica, si no el promedio regional."""
+    if region.point is not None:
+        lat, lon = region.point
+        return power.fetch_point(param, lat, lon, power.FIRST_YEAR, power.LAST_YEAR)
+    inside = (lambda lat, lon, rid=region.id: covers_department(rid, lat, lon)) if region.clip else None
+    return power.fetch_regional(param, region.bbox, power.FIRST_YEAR, power.LAST_YEAR, inside=inside)
 
 
 def _anomaly_fields(record: dict[int, float], years: list[int], base_start: int, base_end: int,
@@ -177,9 +186,11 @@ def drought(region: Region, season: Season, start: int, end: int) -> schemas.Dro
 # Focos de calor
 # ---------------------------------------------------------------------------
 
-def hotspots(region: Region, season: Season, start: int, end: int) -> schemas.HotspotsResponse:
-    counts = firms.yearly_counts(region.bbox, season.months, start, end)
-    record = firms.yearly_counts(region.bbox, season.months, firms.FIRST_COMPARABLE_YEAR, firms.LAST_YEAR)
+def hotspots(region: Region, season: Season, start: int, end: int, inside=None) -> schemas.HotspotsResponse:
+    counts = firms.yearly_counts(region.bbox, season.months, start, end, inside=inside)
+    record = firms.yearly_counts(
+        region.bbox, season.months, firms.FIRST_COMPARABLE_YEAR, firms.LAST_YEAR, inside=inside
+    )
     t = _try_trend({y: float(c) for y, c in counts.items()})
 
     percent = None
@@ -207,13 +218,37 @@ def hotspots(region: Region, season: Season, start: int, end: int) -> schemas.Ho
     )
 
 
-def hotspot_grid(region: Region, season: Season, year: int) -> schemas.HotspotGridResponse:
+def hotspot_grid(region: Region, season: Season, year: int, inside=None) -> schemas.HotspotGridResponse:
+    del inside
+    # Media celda de más: así el mapa recibe los cuadrados cuyo centro cae justo
+    # afuera y que igual cubren el borde. El recorte al polígono lo hace el mapa.
+    pad = firms.CELL_DEG / 2
+    box = region.bbox
+    wide = BBox(west=box.west - pad, south=box.south - pad, east=box.east + pad, north=box.north + pad)
     return schemas.HotspotGridResponse(
         region=region_out(region),
         season=season_out(season),
         year=year,
         cell_deg=firms.CELL_DEG,
-        cells=firms.grid_for_year(region.bbox, season.months, year),
+        cells=firms.grid_for_year(wide, season.months, year),
+    )
+
+
+def place_grid(season: Season, year: int) -> schemas.PlaceGridResponse:
+    from app.data.place_grid import CELL_DEG, grid_for_places
+
+    cells, step = grid_for_places(year, season.months)
+    return schemas.PlaceGridResponse(
+        place_id="warnes-montero",
+        name="Warnes and Montero",
+        season=season_out(season),
+        year=year,
+        cell_deg=step or CELL_DEG,
+        cells=cells,
+        note=(
+            "Each square is 0.05° and its center lies inside the Warnes or Montero municipality. "
+            "Detections are MODIS hotspots from NASA FIRMS."
+        ),
     )
 
 
@@ -221,9 +256,9 @@ def hotspot_grid(region: Region, season: Season, year: int) -> schemas.HotspotGr
 # El puente
 # ---------------------------------------------------------------------------
 
-def link(region: Region, season: Season, param: str, start: int, end: int) -> schemas.LinkResponse:
+def link(region: Region, season: Season, param: str, start: int, end: int, inside=None) -> schemas.LinkResponse:
     dry = drought_series(param, region, season, start, end)
-    fires = firms.yearly_counts(region.bbox, season.months, start, end)
+    fires = firms.yearly_counts(region.bbox, season.months, start, end, inside=inside)
     years = sorted(set(dry) & set(fires))
     points = [schemas.LinkPoint(year=y, drought_value=dry[y], hotspots=fires[y]) for y in years]
 
@@ -257,7 +292,7 @@ WET_CURRENT = (1, 2, 3)
 
 def wet_record(param: str, region: Region) -> dict[int, float]:
     """Promedio de la época húmeda que termina en marzo de cada año (oct del año anterior a mar)."""
-    monthly = power.fetch_regional(param, region.bbox, power.FIRST_YEAR, power.LAST_YEAR)
+    monthly = _monthly(param, region)
     out: dict[int, float] = {}
     for year in monthly:
         before, now = monthly.get(year - 1, {}), monthly[year]
@@ -267,9 +302,9 @@ def wet_record(param: str, region: Region) -> dict[int, float]:
     return out
 
 
-def lead(region: Region, season: Season, start: int, end: int) -> schemas.LeadResponse:
+def lead(region: Region, season: Season, start: int, end: int, inside=None) -> schemas.LeadResponse:
     """Un solo desfase, fijado de antemano: no se buscan varios desfases para quedarse con el mejor."""
-    fires = firms.yearly_counts(region.bbox, season.months, start, end)
+    fires = firms.yearly_counts(region.bbox, season.months, start, end, inside=inside)
     indicators = list(power.DROUGHT_INDICATORS.values())
     results = {}
     for ind in indicators:

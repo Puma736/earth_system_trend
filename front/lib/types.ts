@@ -154,6 +154,17 @@ export interface HotspotGridResponse {
   cells: HotspotCell[];
 }
 
+/** GET /api/hotspots/places */
+export interface PlaceGridResponse {
+  place_id: string;
+  name: string;
+  season: Season;
+  year: number;
+  cell_deg: number;
+  cells: HotspotCell[];
+  note: string;
+}
+
 export interface LinkPoint {
   year: number;
   drought_value: number;

@@ -3,7 +3,7 @@ from fastapi import HTTPException, Query
 from app.regions import REGIONS, SEASONS, Region, Season
 
 
-def get_region(region: str = Query("santa_cruz", description="Region id from /api/regions")) -> Region:
+def get_region(region: str = Query("santa-cruz", description="Department id from /api/regions")) -> Region:
     try:
         return REGIONS[region]
     except KeyError:

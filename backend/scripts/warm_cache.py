@@ -4,7 +4,7 @@ Así la primera consulta de la demo no tarda: las 6 variables de cada región
 quedan guardadas en backend/.cache/. Úsalo antes de la demo y después de desplegar.
 
     python -m scripts.warm_cache                     # todas las regiones
-    python -m scripts.warm_cache santa_cruz bolivia  # solo algunas
+    python -m scripts.warm_cache santa-cruz la-paz  # solo algunas
 """
 
 from __future__ import annotations

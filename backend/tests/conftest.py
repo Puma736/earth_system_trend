@@ -29,7 +29,7 @@ def fake_power(monkeypatch):
         "RH2M": (70.0, 0.0),  # plano
     }
 
-    def fetch(param, bbox, start, end):
+    def fetch(param, bbox, start, end, inside=None):
         base, slope = trends[param]
         return synthetic_monthly(start, end, base, slope)
 

@@ -3,6 +3,7 @@ import type {
   DroughtResponse,
   HotspotGridResponse,
   HotspotsResponse,
+  PlaceGridResponse,
   LeadResponse,
   LinkResponse,
 } from "./types";
@@ -34,6 +35,8 @@ export class ApiError extends Error {
 export interface AreaQuery {
   region: string;
   season: string;
+  /** Ids de provincia separados por coma. Vacío: el rectángulo de la región. */
+  provinces?: string;
 }
 
 export interface PeriodQuery extends AreaQuery {
@@ -56,6 +59,8 @@ export const api = {
     getJson<HotspotsResponse>("/api/hotspots", { ...query }, signal, FIRMS_TIMEOUT_MS),
   hotspotGrid: (query: AreaQuery & { year: number }, signal?: AbortSignal) =>
     getJson<HotspotGridResponse>("/api/hotspots/grid", { ...query }, signal, FIRMS_TIMEOUT_MS),
+  placeGrid: (query: { season: string; year: number }, signal?: AbortSignal) =>
+    getJson<PlaceGridResponse>("/api/hotspots/places", { ...query }, signal, POWER_TIMEOUT_MS),
   link: (query: PeriodQuery & { indicator: string }, signal?: AbortSignal) =>
     getJson<LinkResponse>("/api/link", { ...query }, signal, POWER_TIMEOUT_MS),
   lead: (query: PeriodQuery, signal?: AbortSignal) =>

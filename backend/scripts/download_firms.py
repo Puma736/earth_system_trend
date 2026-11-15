@@ -28,7 +28,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.config import get_settings  # noqa: E402
 from app.data.firms import cell_center  # noqa: E402
-from app.regions import REGIONS  # noqa: E402
+from app.regions import BOLIVIA_BBOX, REGIONS  # noqa: E402
 
 API = "https://firms.modaps.eosdis.nasa.gov/api/area/csv"
 DAYS_PER_REQUEST = 5
@@ -121,8 +121,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--start", type=date.fromisoformat, default=date(2003, 1, 1))
     parser.add_argument("--end", type=date.fromisoformat, default=date(2025, 12, 31))
-    parser.add_argument("--region", default="bolivia", choices=sorted(REGIONS),
-                        help="Rectangle to download. Bolivia covers every sub-region.")
+    parser.add_argument("--region", default="bolivia", choices=["bolivia", *sorted(REGIONS)],
+                        help="Rectangle to download. bolivia covers every department.")
     parser.add_argument("--source", default="MODIS_SP", choices=["MODIS_SP", "MODIS_NRT"])
     args = parser.parse_args()
 
@@ -133,7 +133,8 @@ def main() -> None:
 
     raw_dir = settings.data_dir / "firms_raw"
     raw_dir.mkdir(parents=True, exist_ok=True)
-    bbox = REGIONS[args.region].bbox.as_firms()
+    box = BOLIVIA_BBOX if args.region == "bolivia" else REGIONS[args.region].bbox
+    bbox = box.as_firms()
 
     chunks = list(windows(args.start, args.end))
     print(f"{len(chunks)} requests for {args.region} ({bbox}), {args.source}")

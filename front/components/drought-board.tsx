@@ -25,6 +25,7 @@ import {
   withUnit,
 } from "@/lib/format";
 import type { DroughtIndicator, DroughtResponse, YearAnomaly } from "@/lib/types";
+import { variableColor } from "@/lib/variable-colors";
 import type { Resource } from "@/lib/use-resource";
 
 interface Row {
@@ -58,7 +59,11 @@ export function DroughtBoard({
             <Summary data={data} />
             <LegendRow
               items={[
-                { kind: "line", color: CHART.context, label: `Average for ${monthRange(data.season.months)}, per year` },
+                {
+                  kind: "line",
+                  color: "#7eb6ff",
+                  label: `Average for ${monthRange(data.season.months)}, in that variable's color`,
+                },
                 ...(data.indicators.some((indicator) => indicator.trend !== null)
                   ? [{ kind: "line" as const, color: CHART.accent, label: "Sen trend line" }]
                   : []),
@@ -130,7 +135,12 @@ function IndicatorCard({ indicator, selectedYear }: { indicator: DroughtIndicato
   }));
 
   return (
-    <Box className="indicator-card" component="article" aria-label={indicator.label}>
+    <Box
+      className="indicator-card"
+      component="article"
+      aria-label={indicator.label}
+      style={{ borderLeft: `3px solid ${variableColor(indicator.param)}` }}
+    >
       <Stack gap={6}>
         <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
           <div>
@@ -171,7 +181,13 @@ function IndicatorCard({ indicator, selectedYear }: { indicator: DroughtIndicato
           </Text>
         ) : null}
 
-        <IndicatorChart rows={rows} unit={unit} rankOf={indicator.rank_of} rankBy={indicator.rank_by} />
+        <IndicatorChart
+          rows={rows}
+          unit={unit}
+          rankOf={indicator.rank_of}
+          rankBy={indicator.rank_by}
+          color={variableColor(indicator.param)}
+        />
 
         {trend && first && last ? (
           <Text size="xs">
@@ -225,11 +241,13 @@ function IndicatorChart({
   unit,
   rankOf,
   rankBy,
+  color,
 }: {
   rows: Row[];
   unit: string;
   rankOf: number;
   rankBy: "lowest" | "highest";
+  color: string;
 }) {
   const first = rows[0]?.year ?? 0;
   const last = rows[rows.length - 1]?.year ?? 0;
@@ -270,7 +288,7 @@ function IndicatorChart({
                 <TooltipCard
                   title={String(row.year)}
                   rows={[
-                    { label: "season average", value: withUnit(formatNumber(row.value), unit), color: CHART.context },
+                    { label: "season average", value: withUnit(formatNumber(row.value), unit), color },
                     ...(row.trend === null
                       ? []
                       : [{ label: "trend line", value: withUnit(formatNumber(row.trend), unit), color: CHART.accent }]),
@@ -288,10 +306,10 @@ function IndicatorChart({
           <Line
             type="linear"
             dataKey="value"
-            stroke={CHART.context}
+            stroke={color}
             strokeWidth={1.5}
             dot={false}
-            activeDot={{ r: 4, fill: CHART.context, stroke: CHART.surface, strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: color, stroke: CHART.surface, strokeWidth: 2 }}
             isAnimationActive={false}
           />
           <Line

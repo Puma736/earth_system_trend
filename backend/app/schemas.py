@@ -154,6 +154,16 @@ class HotspotGridResponse(BaseModel):
     cells: list[HotspotCell]
 
 
+class PlaceGridResponse(BaseModel):
+    place_id: str
+    name: str
+    season: SeasonOut
+    year: int
+    cell_deg: float
+    cells: list[HotspotCell]
+    note: str
+
+
 class LinkPoint(BaseModel):
     year: int
     drought_value: float
