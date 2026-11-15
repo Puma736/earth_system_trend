@@ -185,3 +185,25 @@ function ringCovers(ring: Ring, lon: number, lat: number): boolean {
   }
   return inside;
 }
+
+/**
+ * Polígono que recorta las celdas. Chiquitanía no es un departamento:
+ * queda dentro de Santa Cruz. Bolivia usa los nueve, para no pintar fuera del país.
+ * En el catálogo actual el id de la región es el del departamento.
+ */
+const REGION_CLIP: Record<string, string[] | null> = {
+  santa_cruz: ["santa-cruz"],
+  chiquitania: ["santa-cruz"],
+  bolivia: null,
+};
+
+export function clipDepartments(regionId: string): DepartmentFeature[] {
+  if (Object.prototype.hasOwnProperty.call(REGION_CLIP, regionId)) {
+    const ids = REGION_CLIP[regionId];
+    if (!ids) return departments.features;
+    const allowed = new Set(ids);
+    return departments.features.filter((feature) => allowed.has(feature.properties.id));
+  }
+  const match = departments.features.filter((feature) => feature.properties.id === regionId);
+  return match.length > 0 ? match : departments.features;
+}

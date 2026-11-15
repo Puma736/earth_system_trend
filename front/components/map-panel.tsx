@@ -80,6 +80,7 @@ export function MapPanel({
         <div className={status === "loading" && !data ? "is-refreshing" : undefined}>
           <TrendMap
             bbox={region.bbox}
+            regionId={region.id}
             cells={cells}
             cellDeg={data?.cell_deg ?? 0.5}
             cellDegLat={data?.cell_deg ?? 0.5}

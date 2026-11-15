@@ -6,7 +6,7 @@ import type { PathOptions } from "leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { CHART } from "@/components/chart-kit";
-import { departments, featureCovers, featureHitsCell, type DepartmentFeature } from "@/lib/bolivia";
+import { clipDepartments, departments, featureCovers, featureHitsCell, type DepartmentFeature } from "@/lib/bolivia";
 import { formatCount, formatLat, formatLon } from "@/lib/format";
 import { binFor } from "@/lib/hotspot-scale";
 import type { BBox, HotspotCell } from "@/lib/types";
@@ -26,6 +26,8 @@ export interface GeoMapProps {
   selected?: DepartmentFeature[];
   /** Resto de provincias de la región, solo el contorno. */
   context?: DepartmentFeature[];
+  /** Id de la región: recorta las celdas al polígono de su departamento. */
+  regionId?: string;
 }
 
 const departmentStyle: PathOptions = {
@@ -82,11 +84,13 @@ export function GeoMap({
   label,
   selected = [],
   context = [],
+  regionId,
 }: GeoMapProps) {
   const dlat = cellDegLat ?? cellDeg;
   const dlon = cellDegLon ?? cellDeg;
   const focus = selected.length > 0 ? collectionBounds(selected) : bbox;
   const tiles = useMemo(() => heatTiles(cells, dlat, dlon, selected), [cells, dlat, dlon, selected]);
+  const limits = useMemo(() => (regionId ? clipDepartments(regionId) : []), [regionId]);
   const selectedKey = selected.map((feature) => feature.properties.id).join(",");
   const contextKey = context.map((feature) => feature.properties.id).join(",");
   const named = useMemo(() => (context.length === 0 ? selected : [...selected, ...context]), [context, selected]);
@@ -105,7 +109,7 @@ export function GeoMap({
         {context.length > 0 ? (
           <GeoJSON key={`context-${contextKey}`} data={collection(context)} style={contextStyle} pane="province-outline" interactive={false} />
         ) : null}
-        <JoinedHeat tiles={tiles} provinces={selected} named={named} period={period} />
+        <JoinedHeat tiles={tiles} provinces={selected} limits={limits} named={named} period={period} />
         {selected.length > 0 && selected.length <= 6 ? (
           <GeoJSON
             key={`names-${selectedKey}`}
@@ -190,11 +194,13 @@ function OutlinePane() {
 function JoinedHeat({
   tiles,
   provinces,
+  limits,
   named,
   period,
 }: {
   tiles: HeatTile[];
   provinces: DepartmentFeature[];
+  limits: DepartmentFeature[];
   named: DepartmentFeature[];
   period: string;
 }) {
@@ -223,6 +229,11 @@ function JoinedHeat({
       ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
       ctx.clearRect(0, 0, size.x, size.y);
       ctx.save();
+      if (limits.length > 0) {
+        ctx.beginPath();
+        traceProvinces(ctx, limits, map);
+        ctx.clip("evenodd");
+      }
       if (provinces.length > 0) {
         ctx.beginPath();
         traceProvinces(ctx, provinces, map);
@@ -304,7 +315,7 @@ function JoinedHeat({
       map.closeTooltip(tooltip);
       canvas.remove();
     };
-  }, [map, named, period, provinces, tiles]);
+  }, [limits, map, named, period, provinces, tiles]);
 
   return null;
 }
