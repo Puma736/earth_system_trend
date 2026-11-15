@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Configuración de PyCharm
+.idea/
+
+# Bases SQLite de TaskManagerAPI: se crean al correr la API (tasks.db) y sus tests (test_tasks.db)
+*.db
