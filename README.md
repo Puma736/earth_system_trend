@@ -11,7 +11,10 @@
 
 ## Frontend
 
-Requiere Node.js y npm, y el backend corriendo (ver abajo): todos los datos salen de la API, ya no hay datos simulados.
+Requiere Node.js y npm, y el backend corriendo (ver abajo). Hay dos pantallas:
+
+- `/`: el tablero, con datos reales de NASA POWER y FIRMS. Todo sale de la API, sin datos simulados.
+- `/investigation`: la pantalla de la rama `velaxd`, con el motor de `backend/app/investigate.py`. Ese motor **genera series simuladas** (ciclo estacional, ruido y una sequía agregada a propósito al final del período): sirve para probar los análisis, no para sacar conclusiones. La pantalla lo avisa arriba.
 
 ```powershell
 cd front
@@ -22,7 +25,7 @@ npm run dev
 
 Abre <http://localhost:3000>.
 
-El navegador no llama al backend directamente: pide `/api/...` al mismo servidor de Next.js (puerto 3000) y este lo reenvía al backend. `front/.env.local` dice dónde está el backend:
+El navegador no llama al backend directamente: pide `/api/...`, `/health`, `/catalog` y `/investigations` al mismo servidor de Next.js (puerto 3000) y este lo reenvía al backend. `front/.env.local` dice dónde está el backend:
 
 ```
 BACKEND_URL=http://127.0.0.1:8000
@@ -58,9 +61,12 @@ Si no carga:
 
 ```
 front/
-  next.config.ts        reenvía /api/* y /health al backend (BACKEND_URL)
+  next.config.ts        reenvía /api/*, /health, /catalog y /investigations al backend (BACKEND_URL)
   app/                  página, layout y estilos globales
+    investigation/      pantalla /investigation (velaxd), con sus estilos dentro de .investigation-page
+    api/geocode/        búsqueda de lugares de /investigation (Nominatim, solo Bolivia)
   components/
+    investigation/      componentes de /investigation: formulario, mapa y búsqueda de lugares
     workstation.tsx     filtros y estado compartido (región, época, años, año del mapa)
     drought-board.tsx   tablero de los 6 indicadores (/api/drought)
     hotspots-panel.tsx  focos por año (/api/hotspots)
@@ -76,6 +82,7 @@ front/
     format.ts           formato de números, p-valores y unidades
     hotspot-scale.ts    escala de colores del mapa
     bolivia.ts          límites departamentales (GeoBolivia)
+    investigation/      cliente, tipos y límites de /investigation
 ```
 
 Un clic en una barra de focos o en un punto del puente cambia el año del mapa.
@@ -92,7 +99,9 @@ python -m pip install -r requirements.txt
 python -m uvicorn app.main:app --reload
 ```
 
-La API queda disponible en <http://localhost:8000>. La ruta `/health` verifica que esté en funcionamiento y la documentación interactiva está en `/docs`.
+La API queda disponible en <http://localhost:8000>. La ruta `/health` verifica que esté en funcionamiento (y dice qué motor usa `/investigations`) y la documentación interactiva está en `/docs`.
+
+`pandas`, `scikit-learn`, `statsmodels`, `ruptures` y `pykrige` son solo para el motor de `/investigations` (`ALGORITMOS/src/sci_lab_math`). Si no están instalados, `investigate.py` hace las mismas pruebas en Python puro y `/health` responde `"engine": "local"`. El tablero no los necesita.
 
 Si el puerto 8000 está ocupado, usa otro y pon ese puerto en `BACKEND_URL`, en `front/.env.local`:
 
@@ -113,6 +122,8 @@ El formato completo de cada respuesta, con ejemplos, está en [docs/api.md](docs
 | `GET /api/hotspots?region=&season=&start=&end=` | Focos por año con tendencia y % de cambio | FIRMS (MODIS) |
 | `GET /api/hotspots/grid?year=&region=&season=` | Focos por celda de 0,5° de un año, para el mapa | FIRMS (MODIS) |
 | `GET /api/link?region=&season=&indicator=&start=&end=` | Sequía frente a focos por año, con Spearman | POWER + FIRMS |
+| `GET /catalog` | Regiones, variables y preguntas de `/investigation` | — |
+| `POST /investigations` | Series, pruebas, mapa y conclusión de `/investigation` | **Simulada** (`investigate.py`) |
 
 Las respuestas de POWER se guardan en `backend/.cache/`. El backend siempre descarga 1981–2025 y recorta los años después, así que cualquier rango sale de la misma caché: la primera consulta de cada región tarda unos segundos y las siguientes son inmediatas, incluso sin internet. Antes de una demo o después de desplegar, precarga las 3 regiones:
 
@@ -135,6 +146,7 @@ python -m scripts.download_firms --start 2003-01-01 --end 2025-12-31
 ```
 backend/app/
   main.py          app, CORS y manejo de errores
+  investigate.py   motor de /catalog y /investigations (series simuladas; usa ALGORITMOS si está instalado)
   config.py        variables de entorno
   regions.py       regiones y épocas
   schemas.py       contrato de la API (lo que recibe el frontend)

@@ -2,7 +2,33 @@ from app.data import power
 
 
 def test_health(client):
-    assert client.get("/health").json() == {"status": "ok"}
+    data = client.get("/health").json()
+    assert data["status"] == "ok"
+    assert data["engine"] in {"sci_lab_math", "local"}
+
+
+def test_investigation_catalog(client):
+    data = client.get("/catalog").json()
+    assert {r["id"] for r in data["regions"]} >= {"bolivia", "santa_cruz"}
+    assert {c["id"] for c in data["cases"]} == {"drought", "heat", "signal"}
+
+
+def test_investigation_runs(client):
+    query = {
+        "region_id": "santa_cruz",
+        "case_id": "drought",
+        "question_id": "trend",
+        "variables": ["precipitation", "soil_moisture"],
+        "start": "2001-01",
+        "end": "2010-12",
+        "aggregation": "monthly",
+    }
+    resp = client.post("/investigations", json=query)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert [s["variable"] for s in data["series"]] == ["precipitation", "soil_moisture"]
+    assert len(data["series"][0]["points"]) == 120
+    assert data["conclusion"]
 
 
 def test_regions(client):

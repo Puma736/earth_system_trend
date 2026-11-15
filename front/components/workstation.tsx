@@ -2,6 +2,7 @@
 
 import {
   Alert,
+  Anchor,
   AppShell,
   Badge,
   Button,
@@ -16,6 +17,7 @@ import {
   Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
+import Link from "next/link";
 import { useState } from "react";
 import { BridgePanel } from "@/components/bridge-panel";
 import { DroughtBoard } from "@/components/drought-board";
@@ -30,6 +32,8 @@ import { useResource } from "@/lib/use-resource";
 // Valores iniciales: la estación seca y la humedad del suelo superficial (el puente más fuerte).
 const DEFAULT_SEASON = "DRY";
 const DEFAULT_INDICATOR = "GWETTOP";
+// La pantalla de la rama velaxd (/investigation) trabaja con series simuladas, no con datos de la NASA.
+const INVESTIGATION_LINK = "Investigation (simulated data)";
 
 export function Workstation() {
   const health = useResource("health", (signal) => api.health(signal));
@@ -50,18 +54,21 @@ export function Workstation() {
             <Title order={1} size="h3" c="#CBD931">
               Trend Detective
             </Title>
-            <Text size="sm" visibleFrom="sm">
+            <Text size="sm" visibleFrom="md">
               Is the region drying out? Are fire hotspots increasing? How much, and is it a real change?
             </Text>
+            <Anchor component={Link} href="/investigation" size="xs" c="#CBD931" hiddenFrom="md">
+              {INVESTIGATION_LINK}
+            </Anchor>
           </div>
-          <Badge
-            variant="dot"
-            color={health.status === "ready" ? "signal" : "gray"}
-            title={`API: ${API_LABEL}`}
-            style={{ flexShrink: 0 }}
-          >
-            {health.status === "ready" ? "API online" : health.status === "error" ? "API offline" : "Checking API"}
-          </Badge>
+          <Group gap="md" wrap="nowrap" style={{ flexShrink: 0 }}>
+            <Anchor component={Link} href="/investigation" size="sm" c="#CBD931" visibleFrom="md">
+              {INVESTIGATION_LINK}
+            </Anchor>
+            <Badge variant="dot" color={health.status === "ready" ? "signal" : "gray"} title={`API: ${API_LABEL}`}>
+              {health.status === "ready" ? "API online" : health.status === "error" ? "API offline" : "Checking API"}
+            </Badge>
+          </Group>
         </Group>
       </AppShell.Header>
       <AppShell.Main>

@@ -1,0 +1,652 @@
+{
+  "entity_name": "Empresa Demo",
+  "domain": "general",
+  "n_observations": 48,
+  "date_range": {
+    "start": "2021-01-01 00:00:00",
+    "end": "2024-12-01 00:00:00"
+  },
+  "frequency": "M",
+  "seasonal_period": 12,
+  "variables": [
+    "ventas",
+    "trafico_web",
+    "tasa_conversion"
+  ],
+  "trends": {
+    "ventas": {
+      "linear_regression": {
+        "n": 48,
+        "slope": 2.333517949446135,
+        "intercept": 101.24705141559195,
+        "r_squared": 0.8210657496458348,
+        "p_value": 8.337026195476905e-19,
+        "std_err": 0.16061644195959726,
+        "trend": "creciente"
+      },
+      "mann_kendall": {
+        "trend": "increasing",
+        "h": true,
+        "p_value": 6.459277557269161e-13,
+        "z": 7.190424650661176,
+        "tau": 0.7180851063829787,
+        "s": 810.0,
+        "var_s": 12658.666666666666,
+        "sens_slope": 2.336579945957744,
+        "intercept": 100.53069196221968
+      },
+      "sens_slope": {
+        "slope": 2.336579945957744,
+        "intercept": 101.44851046962819
+      }
+    },
+    "trafico_web": {
+      "linear_regression": {
+        "n": 48,
+        "slope": 68.65163636955722,
+        "intercept": 5294.73994112034,
+        "r_squared": 0.5385581047436945,
+        "p_value": 2.9500505239161766e-09,
+        "std_err": 9.369452328849135,
+        "trend": "creciente"
+      },
+      "mann_kendall": {
+        "trend": "increasing",
+        "h": true,
+        "p_value": 1.9982144650043665e-07,
+        "z": 5.199503610181444,
+        "tau": 0.5195035460992907,
+        "s": 586.0,
+        "var_s": 12658.666666666666,
+        "sens_slope": 66.96533847815343,
+        "intercept": 5277.977922388885
+      },
+      "sens_slope": {
+        "slope": 66.96533847815343,
+        "intercept": 5340.647904524209
+      }
+    },
+    "tasa_conversion": {
+      "linear_regression": {
+        "n": 48,
+        "slope": 0.02644327571850217,
+        "intercept": 2.0371290843005605,
+        "r_squared": 0.4882851856829572,
+        "p_value": 3.330243285434251e-08,
+        "std_err": 0.003991292522234077,
+        "trend": "creciente"
+      },
+      "mann_kendall": {
+        "trend": "increasing",
+        "h": true,
+        "p_value": 4.25245239243921e-07,
+        "z": 5.0572949644328915,
+        "tau": 0.5053191489361702,
+        "s": 570.0,
+        "var_s": 12658.666666666666,
+        "sens_slope": 0.02549679657272169,
+        "intercept": 2.074637898546208
+      },
+      "sens_slope": {
+        "slope": 0.02549679657272169,
+        "intercept": 2.090322763519988
+      }
+    }
+  },
+  "anomalies": {
+    "ventas": {
+      "n_anomalies_z2": 0,
+      "last_z_score": 1.4679286739664477,
+      "mean": 156.08472322757612,
+      "std": 36.05373094575095,
+      "min": 97.53620080144047,
+      "max": 218.2042212216846
+    },
+    "trafico_web": {
+      "n_anomalies_z2": 1,
+      "last_z_score": 1.1461015287321568,
+      "mean": 6908.053395804935,
+      "std": 1309.6723121502496,
+      "min": 4574.162587398908,
+      "max": 9705.681595017415
+    },
+    "tasa_conversion": {
+      "n_anomalies_z2": 2,
+      "last_z_score": 0.6538817515270305,
+      "mean": 2.6585460636853613,
+      "std": 0.5297933648701066,
+      "min": 1.6406426618253647,
+      "max": 3.958341431104522
+    }
+  },
+  "relations": {
+    "ventas__vs__trafico_web": {
+      "pearson": {
+        "r": 0.8986245662309356,
+        "p_value": 4.498244200578516e-18,
+        "n": 48
+      },
+      "spearman": {
+        "rho": 0.8999131567520625,
+        "p_value": 3.3997518897033646e-18,
+        "n": 48
+      },
+      "best_lag": {
+        "lag": 0,
+        "correlation": 0.8986245662309356,
+        "p_value": 4.498244200578516e-18
+      },
+      "cross_correlation": [
+        {
+          "lag": -6,
+          "correlation": 0.40555626287317026,
+          "p_value": 0.007708793516145261,
+          "n": 42
+        },
+        {
+          "lag": -5,
+          "correlation": 0.43880734354648765,
+          "p_value": 0.0032445807839033376,
+          "n": 43
+        },
+        {
+          "lag": -4,
+          "correlation": 0.4976810219155098,
+          "p_value": 0.0005874876638844851,
+          "n": 44
+        },
+        {
+          "lag": -3,
+          "correlation": 0.6331727318281629,
+          "p_value": 3.046823081257729e-06,
+          "n": 45
+        },
+        {
+          "lag": -2,
+          "correlation": 0.7477269867916166,
+          "p_value": 2.357308687918234e-09,
+          "n": 46
+        },
+        {
+          "lag": -1,
+          "correlation": 0.8472973088462554,
+          "p_value": 5.955973215428983e-14,
+          "n": 47
+        },
+        {
+          "lag": 0,
+          "correlation": 0.8986245662309356,
+          "p_value": 4.498244200578516e-18,
+          "n": 48
+        },
+        {
+          "lag": 1,
+          "correlation": 0.8862161168662154,
+          "p_value": 1.21762928355159e-16,
+          "n": 47
+        },
+        {
+          "lag": 2,
+          "correlation": 0.8307002738657943,
+          "p_value": 9.165852480010859e-13,
+          "n": 46
+        },
+        {
+          "lag": 3,
+          "correlation": 0.7386557840021682,
+          "p_value": 6.937419530770504e-09,
+          "n": 45
+        },
+        {
+          "lag": 4,
+          "correlation": 0.5972149192034306,
+          "p_value": 1.8725864618073638e-05,
+          "n": 44
+        },
+        {
+          "lag": 5,
+          "correlation": 0.4729253575300591,
+          "p_value": 0.0013620122414316567,
+          "n": 43
+        },
+        {
+          "lag": 6,
+          "correlation": 0.4155297687035204,
+          "p_value": 0.0062072005038391175,
+          "n": 42
+        }
+      ]
+    },
+    "ventas__vs__tasa_conversion": {
+      "pearson": {
+        "r": 0.8841854226766418,
+        "p_value": 8.195287500932546e-17,
+        "n": 48
+      },
+      "spearman": {
+        "rho": 0.8799392097264437,
+        "p_value": 1.7892998385989728e-16,
+        "n": 48
+      },
+      "best_lag": {
+        "lag": 0,
+        "correlation": 0.8841854226766418,
+        "p_value": 8.195287500932546e-17
+      },
+      "cross_correlation": [
+        {
+          "lag": -6,
+          "correlation": 0.3987822669928653,
+          "p_value": 0.008898718694071148,
+          "n": 42
+        },
+        {
+          "lag": -5,
+          "correlation": 0.45735900673324537,
+          "p_value": 0.002046209980309495,
+          "n": 43
+        },
+        {
+          "lag": -4,
+          "correlation": 0.5057202134199847,
+          "p_value": 0.0004620573502933134,
+          "n": 44
+        },
+        {
+          "lag": -3,
+          "correlation": 0.6474987908097805,
+          "p_value": 1.5297802737613408e-06,
+          "n": 45
+        },
+        {
+          "lag": -2,
+          "correlation": 0.7420410806741381,
+          "p_value": 3.608371861483992e-09,
+          "n": 46
+        },
+        {
+          "lag": -1,
+          "correlation": 0.8357898543520528,
+          "p_value": 2.6880453027450386e-13,
+          "n": 47
+        },
+        {
+          "lag": 0,
+          "correlation": 0.8841854226766418,
+          "p_value": 8.195287500932546e-17,
+          "n": 48
+        },
+        {
+          "lag": 1,
+          "correlation": 0.8416181854573923,
+          "p_value": 1.2718556910672126e-13,
+          "n": 47
+        },
+        {
+          "lag": 2,
+          "correlation": 0.754476455785697,
+          "p_value": 1.4012371560730487e-09,
+          "n": 46
+        },
+        {
+          "lag": 3,
+          "correlation": 0.6202083645569059,
+          "p_value": 5.5186794880683966e-06,
+          "n": 45
+        },
+        {
+          "lag": 4,
+          "correlation": 0.4863150410246256,
+          "p_value": 0.0008169080329461914,
+          "n": 44
+        },
+        {
+          "lag": 5,
+          "correlation": 0.3830102164491897,
+          "p_value": 0.011243165878442188,
+          "n": 43
+        },
+        {
+          "lag": 6,
+          "correlation": 0.31176542444265654,
+          "p_value": 0.04444173153046091,
+          "n": 42
+        }
+      ]
+    },
+    "trafico_web__vs__tasa_conversion": {
+      "pearson": {
+        "r": 0.9103109557029927,
+        "p_value": 3.05885584579271e-19,
+        "n": 48
+      },
+      "spearman": {
+        "rho": 0.899587494572297,
+        "p_value": 3.650336192278049e-18,
+        "n": 48
+      },
+      "best_lag": {
+        "lag": 0,
+        "correlation": 0.9103109557029927,
+        "p_value": 3.05885584579271e-19
+      },
+      "cross_correlation": [
+        {
+          "lag": -6,
+          "correlation": 0.15720341128000442,
+          "p_value": 0.32010200774593855,
+          "n": 42
+        },
+        {
+          "lag": -5,
+          "correlation": 0.26341561743242936,
+          "p_value": 0.08787383181855442,
+          "n": 43
+        },
+        {
+          "lag": -4,
+          "correlation": 0.39811830474634236,
+          "p_value": 0.007441040548764414,
+          "n": 44
+        },
+        {
+          "lag": -3,
+          "correlation": 0.6115718626964787,
+          "p_value": 8.079034674816665e-06,
+          "n": 45
+        },
+        {
+          "lag": -2,
+          "correlation": 0.7616853862958484,
+          "p_value": 7.890708522861236e-10,
+          "n": 46
+        },
+        {
+          "lag": -1,
+          "correlation": 0.859306397380269,
+          "p_value": 1.076777597569146e-14,
+          "n": 47
+        },
+        {
+          "lag": 0,
+          "correlation": 0.9103109557029927,
+          "p_value": 3.05885584579271e-19,
+          "n": 48
+        },
+        {
+          "lag": 1,
+          "correlation": 0.7962949990323689,
+          "p_value": 2.2013951319451708e-11,
+          "n": 47
+        },
+        {
+          "lag": 2,
+          "correlation": 0.6550666187664234,
+          "p_value": 7.830385956495972e-07,
+          "n": 46
+        },
+        {
+          "lag": 3,
+          "correlation": 0.4416869669767217,
+          "p_value": 0.002386004398387401,
+          "n": 45
+        },
+        {
+          "lag": 4,
+          "correlation": 0.25554311320080236,
+          "p_value": 0.0940895532485825,
+          "n": 44
+        },
+        {
+          "lag": 5,
+          "correlation": 0.12827898929797701,
+          "p_value": 0.4123361797633382,
+          "n": 43
+        },
+        {
+          "lag": 6,
+          "correlation": 0.05440961815500304,
+          "p_value": 0.7321801602989673,
+          "n": 42
+        }
+      ]
+    }
+  },
+  "changepoints": {
+    "ventas": {
+      "pelt": {
+        "breakpoints": [],
+        "segments": [
+          {
+            "start": 0,
+            "end": 48
+          }
+        ],
+        "penalty": 138.10972046017167
+      },
+      "cusum": {
+        "change_index": 23,
+        "change_value": 149.67011487057357,
+        "cusum_max": 731.2434883291114,
+        "threshold": 35.67619456365599
+      }
+    },
+    "trafico_web": {
+      "pelt": {
+        "breakpoints": [],
+        "segments": [
+          {
+            "start": 0,
+            "end": 48
+          }
+        ],
+        "penalty": 5016.914260486952
+      },
+      "cusum": {
+        "change_index": 24,
+        "change_value": 6734.732054019052,
+        "cusum_max": 23920.38355900908,
+        "threshold": 1295.9580880328308
+      }
+    },
+    "tasa_conversion": {
+      "pelt": {
+        "breakpoints": [
+          25
+        ],
+        "segments": [
+          {
+            "start": 0,
+            "end": 25
+          },
+          {
+            "start": 25,
+            "end": 48
+          }
+        ],
+        "penalty": 2.029460241825193
+      },
+      "cusum": {
+        "change_index": 23,
+        "change_value": 2.4785491825210135,
+        "cusum_max": 8.514288795709476,
+        "threshold": 0.5242456374925453
+      }
+    }
+  },
+  "forecast": {
+    "ventas": {
+      "order": [
+        1,
+        1,
+        1
+      ],
+      "seasonal_order": [
+        1,
+        1,
+        1,
+        12
+      ],
+      "steps": 6,
+      "forecast": [
+        224.37916741918946,
+        240.4150897889084,
+        236.0497034872444,
+        249.46683632628014,
+        251.75500185146896,
+        247.21896787379245
+      ],
+      "lower": [
+        209.22230511752528,
+        225.25812525181482,
+        220.71548207335775,
+        234.00312390780263,
+        236.1566059362544,
+        231.48796739542857
+      ],
+      "upper": [
+        239.53602972085363,
+        255.572054326002,
+        251.38392490113102,
+        264.93054874475763,
+        267.3533977666835,
+        262.94996835215636
+      ],
+      "aic": 156.01566976512328,
+      "bic": 161.2382819537404
+    },
+    "trafico_web": {
+      "order": [
+        1,
+        1,
+        1
+      ],
+      "seasonal_order": [
+        1,
+        1,
+        1,
+        12
+      ],
+      "steps": 6,
+      "forecast": [
+        8841.41668568605,
+        9288.668968220554,
+        10282.41245948872,
+        10341.294673851655,
+        10574.584823358504,
+        10061.768949120627
+      ],
+      "lower": [
+        8136.464464205938,
+        8579.111732428017,
+        9572.645573337159,
+        9631.511392105333,
+        9864.800205296906,
+        9351.984295029664
+      ],
+      "upper": [
+        9546.368907166163,
+        9998.226204013092,
+        10992.179345640281,
+        11051.077955597977,
+        11284.369441420102,
+        10771.55360321159
+      ],
+      "aic": 317.6760218286895,
+      "bic": 322.8986340173066
+    },
+    "tasa_conversion": {
+      "order": [
+        1,
+        1,
+        1
+      ],
+      "seasonal_order": [
+        1,
+        1,
+        1,
+        12
+      ],
+      "steps": 6,
+      "forecast": [
+        3.470874179289966,
+        3.5480721436684,
+        3.933681365827332,
+        3.704659779403744,
+        3.8005082249967734,
+        3.8848761736530153
+      ],
+      "lower": [
+        3.074354254207512,
+        3.151310444094745,
+        3.536810995748657,
+        3.3077978301163946,
+        3.4036455408796225,
+        3.488013552906973
+      ],
+      "upper": [
+        3.8673941043724205,
+        3.9448338432420553,
+        4.330551735906007,
+        4.101521728691094,
+        4.197370909113925,
+        4.2817387943990575
+      ],
+      "aic": 3.8436684619275603,
+      "bic": 9.066280650544675
+    }
+  },
+  "patterns": {
+    "pca": {
+      "explained_variance_ratio": [
+        0.9318187722896851,
+        0.03912901573758478,
+        0.029052211972730137
+      ],
+      "cumulative_variance": [
+        0.9318187722896851,
+        0.9709477880272699,
+        1.0
+      ],
+      "loadings": {
+        "PC1": {
+          "ventas": 0.5746365635486445,
+          "trafico_web": 0.5802335733843699,
+          "tasa_conversion": 0.5771670643328586
+        },
+        "PC2": {
+          "ventas": 0.78319918449848,
+          "trafico_web": -0.1852472346744699,
+          "tasa_conversion": -0.5935339075793208
+        },
+        "PC3": {
+          "ventas": -0.2374696975066936,
+          "trafico_web": 0.7931030591058561,
+          "tasa_conversion": -0.5608882958335039
+        }
+      }
+    }
+  },
+  "conclusiones_cientificas": [
+    "Analisis de 'Empresa Demo' (dominio: general) con 48 observaciones y 3 variables: ventas, trafico_web, tasa_conversion.",
+    "- ventas: tendencia increasing significativa (p=0.0000), pendiente de Sen=2.3366 por periodo.",
+    "  Regresion lineal explica 82.1% de la varianza (R2=0.821).",
+    "- trafico_web: tendencia increasing significativa (p=0.0000), pendiente de Sen=66.9653 por periodo.",
+    "  Regresion lineal explica 53.9% de la varianza (R2=0.539).",
+    "- tasa_conversion: tendencia increasing significativa (p=0.0000), pendiente de Sen=0.0255 por periodo.",
+    "- ventas: sin anomalias extremas. Ultimo Z-score=1.47.",
+    "- trafico_web: 1 anomalias (|Z|>2). Ultimo Z-score=1.15.",
+    "- tasa_conversion: 2 anomalias (|Z|>2). Ultimo Z-score=0.65.",
+    "- ventas: CUSUM sugiere cambio alrededor del indice 23 (fecha aprox. 2022-12-01 00:00:00).",
+    "- trafico_web: CUSUM sugiere cambio alrededor del indice 24 (fecha aprox. 2023-01-01 00:00:00).",
+    "- tasa_conversion: punto de cambio alrededor del indice 25 (fecha aprox. 2023-02-01 00:00:00).",
+    "- Relacion fuerte entre ventas y trafico_web: Pearson r=0.899 (p=0.0000).",
+    "- Relacion fuerte entre ventas y tasa_conversion: Pearson r=0.884 (p=0.0000).",
+    "- Relacion fuerte entre trafico_web y tasa_conversion: Pearson r=0.910 (p=0.0000).",
+    "- Pronostico ventas (6 pasos): media proyectada=241.547 vs historica=156.085 (+54.8%).",
+    "- Pronostico trafico_web (6 pasos): media proyectada=9898.358 vs historica=6908.053 (+43.3%).",
+    "- Pronostico tasa_conversion (6 pasos): media proyectada=3.724 vs historica=2.659 (+40.1%).",
+    "- PCA: el primer componente explica 93.2% de la varianza total.",
+    "Nota: correlacion y sucesion temporal no implican causalidad; controlar estacionalidad y factores externos."
+  ]
+}

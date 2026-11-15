@@ -21,8 +21,9 @@ export default function RootLayout({
         <ColorSchemeScript forceColorScheme="dark" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        {/* Source Serif 4: la conclusión de /investigation. El navegador solo la descarga en esa pantalla. */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,480;8..60,600&display=swap"
           rel="stylesheet"
         />
       </head>

@@ -3,10 +3,11 @@
 Base local: `http://localhost:8000`. Documentación interactiva, siempre al día: `http://localhost:8000/docs`.
 La fuente de verdad del formato es [`backend/app/schemas.py`](../backend/app/schemas.py). Si cambias algo allí, actualiza este archivo y [`front/lib/types.ts`](../front/lib/types.ts), que es su copia en TypeScript.
 
-- Todos los endpoints son `GET` y devuelven JSON.
+- Todos los endpoints de `/api` son `GET` y devuelven JSON.
 - Los textos que ve el usuario vienen en inglés.
-- El navegador no llama al backend directamente: el servidor de Next.js reenvía `/api/*` y `/health` a `BACKEND_URL` (`front/.env.local`, ver [`front/next.config.ts`](../front/next.config.ts)). Si el backend corre en otro puerto, cambia esa variable y reinicia `npm run dev`.
-- CORS permitido solo para `GET` desde `http://localhost:3000` y `http://127.0.0.1:3000`. Solo hace falta si el navegador llama directo, con `NEXT_PUBLIC_API_URL`. Se cambia con `CORS_ORIGINS` en `backend/.env`, separando los orígenes con comas.
+- El navegador no llama al backend directamente: el servidor de Next.js reenvía `/api/*`, `/health`, `/catalog` y `/investigations` a `BACKEND_URL` (`front/.env.local`, ver [`front/next.config.ts`](../front/next.config.ts)). Si el backend corre en otro puerto, cambia esa variable y reinicia `npm run dev`.
+- CORS permitido solo para `GET` y `POST` desde `http://localhost:3000` y `http://127.0.0.1:3000`. Solo hace falta si el navegador llama directo, con `NEXT_PUBLIC_API_URL`. Se cambia con `CORS_ORIGINS` en `backend/.env`, separando los orígenes con comas.
+- `/catalog` y `/investigations` son de la pantalla `/investigation` (rama velaxd) y usan **series simuladas**. Están al final de este archivo.
 
 ## Parámetros comunes
 
@@ -221,3 +222,40 @@ El puente: sequía frente a focos, un punto por año. `indicator` es uno de los 
 
 - `indicator_unit` es la misma unidad que en `/api/regions`, para rotular el eje.
 - `rho` y `p_value` vienen en `null` si hay menos de 3 años en común.
+
+---
+
+## Pantalla `/investigation` (rama velaxd)
+
+Estos dos endpoints no usan datos de la NASA. `backend/app/investigate.py` genera cada serie con una semilla (región, variable y período): un ciclo estacional, ruido al azar y, en el último 30 % del período, una sequía y un calentamiento agregados a propósito. Sirven para probar el motor de análisis. Los textos vienen en español.
+
+Si están instalados `pandas`, `scikit-learn`, `statsmodels`, `ruptures` y `pykrige`, las pruebas las hace `ALGORITMOS/src/sci_lab_math`; si no, `investigate.py` hace las mismas en Python puro. `/health` dice cuál se usa: `{"status": "ok", "engine": "local"}` o `"sci_lab_math"`.
+
+### `GET /catalog`
+
+Regiones (`bolivia`, `la_paz`, `cochabamba`, `santa_cruz`, `beni`, `chaco`), las 5 variables (`precipitation`, `temperature`, `soil_moisture`, `ndvi`, `lst`) y los 3 casos (`drought`, `heat`, `signal`), cada uno con sus preguntas.
+
+### `POST /investigations`
+
+Cuerpo JSON. Lo que falte toma el valor por defecto:
+
+```json
+{
+  "region_id": "santa_cruz",
+  "case_id": "drought",
+  "question_id": "trend",
+  "variables": ["precipitation", "soil_moisture"],
+  "start": "2001-01",
+  "end": "2024-12",
+  "aggregation": "monthly",
+  "department_id": null,
+  "province_id": null,
+  "place": null
+}
+```
+
+- `question_id`: `trend`, `anomaly`, `change`, `lag`, `forecast` o `pattern`.
+- `aggregation`: `monthly` o `annual`.
+- `place`: `{ "name", "lat", "lon" }` o `null`.
+
+Devuelve, entre otros, `series` (puntos con `date`, `value`, `anomaly` y `z`), `statistics`, `relations`, `pattern`, `map_cells`, `map_caption`, `event`, `conclusion` y `caveat`. Los tipos están en [`front/lib/investigation/types.ts`](../front/lib/investigation/types.ts).

@@ -24,10 +24,11 @@ function repairCrossDriveSpecifier(value: unknown): unknown {
 }
 
 /**
- * El navegador pide /api/* y /health a este mismo servidor y Next.js los reenvía al
- * backend. Así, desde otra computadora de la red solo hace falta el puerto 3000, no
- * importa la IP de esta máquina y el backend puede escuchar solo en 127.0.0.1.
- * BACKEND_URL se lee al arrancar npm run dev (y en el build).
+ * El navegador pide /api/*, /health, /catalog y /investigations a este mismo servidor y
+ * Next.js los reenvía al backend. Así, desde otra computadora de la red solo hace falta
+ * el puerto 3000, no importa la IP de esta máquina y el backend puede escuchar solo en
+ * 127.0.0.1. BACKEND_URL se lee al arrancar npm run dev (y en el build).
+ * /api/geocode no se reenvía: es una ruta de Next.js (app/api/geocode) y esas van primero.
  */
 const BACKEND_URL = (process.env.BACKEND_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
 
@@ -36,6 +37,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/api/:path*", destination: `${BACKEND_URL}/api/:path*` },
       { source: "/health", destination: `${BACKEND_URL}/health` },
+      // Pantalla /investigation (motor de velaxd, series simuladas)
+      { source: "/catalog", destination: `${BACKEND_URL}/catalog` },
+      { source: "/investigations", destination: `${BACKEND_URL}/investigations` },
     ];
   },
   experimental: {
