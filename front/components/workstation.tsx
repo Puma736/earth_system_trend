@@ -21,6 +21,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { BridgePanel } from "@/components/bridge-panel";
+import { NalixNav } from "@/components/nalix-nav";
 import { DroughtBoard } from "@/components/drought-board";
 import { HotspotsPanel } from "@/components/hotspots-panel";
 import { LeadPanel } from "@/components/lead-panel";
@@ -53,17 +54,12 @@ export function Workstation() {
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between" wrap="nowrap">
-          <div>
+          <Group gap="md" wrap="nowrap" align="center">
             <Title order={1} size="h3" c="#CBD931">
-              Trend Detective
+              Nalix
             </Title>
-            <Text size="sm" visibleFrom="md">
-              Is the region drying out? Are fire hotspots increasing? How much, and is it a real change?
-            </Text>
-            <Anchor component={Link} href="/investigation" size="xs" c="#CBD931" hiddenFrom="md">
-              {INVESTIGATION_LINK}
-            </Anchor>
-          </div>
+            <NalixNav />
+          </Group>
           <Group gap="md" wrap="nowrap" style={{ flexShrink: 0 }}>
             <Anchor component={Link} href="/investigation" size="sm" c="#CBD931" visibleFrom="md">
               {INVESTIGATION_LINK}

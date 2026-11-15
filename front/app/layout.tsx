@@ -5,9 +5,9 @@ import { Providers } from "./providers";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Trend Detective",
+  title: "Nalix",
   description:
-    "Is the region drying out? Are fire hotspots increasing? Trends from NASA POWER (MERRA-2) and NASA FIRMS (MODIS).",
+    "Nalix es una plataforma de inteligencia climática que transforma datos ambientales en información para monitorear y prevenir la sequía y los focos de calor.",
 };
 
 export default function RootLayout({
