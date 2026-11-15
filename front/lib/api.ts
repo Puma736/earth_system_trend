@@ -3,6 +3,7 @@ import type {
   DroughtResponse,
   HotspotGridResponse,
   HotspotsResponse,
+  LeadResponse,
   LinkResponse,
 } from "./types";
 
@@ -57,6 +58,8 @@ export const api = {
     getJson<HotspotGridResponse>("/api/hotspots/grid", { ...query }, signal, FIRMS_TIMEOUT_MS),
   link: (query: PeriodQuery & { indicator: string }, signal?: AbortSignal) =>
     getJson<LinkResponse>("/api/link", { ...query }, signal, POWER_TIMEOUT_MS),
+  lead: (query: PeriodQuery, signal?: AbortSignal) =>
+    getJson<LeadResponse>("/api/lead", { ...query }, signal, POWER_TIMEOUT_MS),
 };
 
 export function isAbortError(error: unknown): boolean {

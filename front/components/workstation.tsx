@@ -22,6 +22,7 @@ import { useState } from "react";
 import { BridgePanel } from "@/components/bridge-panel";
 import { DroughtBoard } from "@/components/drought-board";
 import { HotspotsPanel } from "@/components/hotspots-panel";
+import { LeadPanel } from "@/components/lead-panel";
 import { MapPanel } from "@/components/map-panel";
 import { MethodsPanel } from "@/components/methods-panel";
 import { API_LABEL, api } from "@/lib/api";
@@ -137,6 +138,10 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
     fireValid ? `hotspots|${area.region}|${area.season}|${fireStart}|${fireEnd}` : null,
     (signal) => api.hotspots({ ...area, start: fireStart, end: fireEnd }, signal),
   );
+  const lead = useResource(
+    fireValid ? `lead|${area.region}|${area.season}|${fireStart}|${fireEnd}` : null,
+    (signal) => api.lead({ ...area, start: fireStart, end: fireEnd }, signal),
+  );
   const link = useResource(
     fireValid ? `link|${area.region}|${area.season}|${indicator}|${fireStart}|${fireEnd}` : null,
     (signal) => api.link({ ...area, indicator, start: fireStart, end: fireEnd }, signal),
@@ -211,7 +216,7 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
         </Text>
       </Paper>
 
-      <DroughtBoard resource={drought} />
+      <DroughtBoard resource={drought} selectedYear={mapYear} />
 
       <Grid gutter="sm" align="stretch">
         <Grid.Col span={{ base: 12, lg: 5 }}>
@@ -235,7 +240,8 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
           />
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 7 }}>
-          <BridgePanel
+          <Stack gap="sm">
+            <BridgePanel
             resource={link}
             indicators={catalog.indicators}
             indicator={indicator}
@@ -244,6 +250,8 @@ function Dashboard({ catalog }: { catalog: Catalog }) {
             onPickYear={setPickedYear}
             emptyReason={fireEmpty}
           />
+            <LeadPanel resource={lead} emptyReason={fireEmpty} />
+          </Stack>
         </Grid.Col>
         <Grid.Col span={{ base: 12, lg: 5 }}>
           <MethodsPanel region={region} hotspotStart={catalog.years.hotspots.start} />

@@ -83,6 +83,23 @@ def test_drought_dashboard(client, fake_power):
     assert by_param["RH2M"]["verdict"] != "Real change"
     assert data["summary"]["pointing_to_drying"] == 5
     assert data["summary"]["text"].startswith("5 of 6 indicators point to drying")
+    # La lluvia baja todos los años: 2025 es el más seco de los 45 y está por debajo de lo normal.
+    rain = by_param["PRECTOTCORR"]
+    assert rain["baseline"]["start"] == 1991 and rain["baseline"]["end"] == 2020
+    assert rain["rank_of"] == 45
+    last = rain["anomalies"][-1]
+    assert last["year"] == 2025 and last["rank"] == 1 and last["z"] < 0
+    # La temperatura sube: el año más "seco" es el más caluroso, también 2025.
+    assert by_param["T2M_MAX"]["anomalies"][-1]["rank"] == 1
+
+
+def test_anomalies_ignore_the_selected_years(client, fake_power):
+    # El período normal es fijo: 2019 tiene la misma anomalía con cualquier rango.
+    full = client.get("/api/drought?start=1981&end=2025").json()["indicators"][0]
+    short = client.get("/api/drought?start=2010&end=2025").json()["indicators"][0]
+    pick = lambda ind: next(a for a in ind["anomalies"] if a["year"] == 2019)
+    assert pick(full) == pick(short)
+    assert len(short["anomalies"]) == 16
 
 
 def test_hotspots_without_csv_is_503(client, tmp_path, monkeypatch):
@@ -103,11 +120,26 @@ def test_hotspots_trend(client, firms_csv):
     assert data["series"][0] == {"year": 2003, "value": 200}
     assert data["trend"]["slope_per_decade"] > 0
     assert data["verdict"] == "Real change"
+    assert data["baseline"]["start"] == 2003 and data["rank_of"] == 23
+    # Los focos suben cada año: el último es el puesto 1 (el de más focos).
+    assert data["anomalies"][-1]["rank"] == 1
 
 
 def test_hotspot_grid(client, firms_csv):
     data = client.get("/api/hotspots/grid?year=2010&season=FIRE").json()
     assert data["cells"] == [{"lat": -17.75, "lon": -61.25, "count": 2 * 240}]  # agosto + septiembre
+
+
+def test_lead_uses_previous_wet_season(client, fake_power, firms_csv):
+    data = client.get("/api/lead?season=FIRE").json()
+    assert data["wet_months"] == [10, 11, 12, 1, 2, 3]
+    by_param = {i["param"]: i for i in data["items"]}
+    soil = by_param["GWETTOP"]
+    # 2003 necesita oct-dic de 2002: los 23 años tienen época húmeda completa.
+    assert soil["n_years"] == 23
+    # Suelo cada vez más seco y focos en aumento -> correlación negativa, ya corregida por FDR.
+    assert soil["rho"] < -0.9 and soil["q_value"] is not None
+    assert soil["verdict"] == "Real change"
 
 
 def test_link(client, fake_power, firms_csv):

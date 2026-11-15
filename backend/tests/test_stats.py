@@ -42,6 +42,28 @@ def test_note_when_one_extreme_year_drives_regression():
     assert any("Linear regression" in n for n in t.notes)
 
 
+def test_note_when_short_series_has_strong_memory():
+    # 20 años de ruido AR(1) muy persistente: si sale "significativo", tiene que avisar.
+    rng = np.random.default_rng(5)
+    years = list(range(2003, 2023))
+    noted = 0
+    for _ in range(200):
+        values = np.zeros(len(years))
+        for i in range(1, len(years)):
+            values[i] = 0.9 * values[i - 1] + rng.normal()
+        t = trend(years, list(values))
+        if t.p_value < 0.05:
+            noted += any("strongly linked" in n for n in t.notes)
+    assert noted > 0
+
+
+def test_no_memory_note_on_long_or_independent_series():
+    rng = np.random.default_rng(1)
+    years = list(range(1981, 2026))
+    t = trend(years, [0.3 * (y - 1981) + rng.normal() for y in years])
+    assert not any("strongly linked" in n for n in t.notes)
+
+
 def test_trend_on_noise_is_not_significant():
     years = list(range(1981, 2026))
     # Con ruido puro, a lo sumo ~5% de las series deberían salir "significativas".
@@ -78,3 +100,23 @@ def test_fdr_is_never_smaller_than_p():
 def test_spearman_perfect_negative():
     r = spearman([1, 2, 3, 4, 5], [10, 8, 6, 4, 2])
     assert r.rho == pytest.approx(-1)
+
+
+def test_pettitt_finds_a_step():
+    from app.stats.changepoint import pettitt
+
+    rng = np.random.default_rng(2)
+    years = list(range(1990, 2020))
+    values = [rng.normal(0, 1) + (3 if y >= 2005 else 0) for y in years]
+    cp = pettitt(years, values)
+    assert cp.year == 2005 and cp.p_value < 0.01
+    assert cp.mean_after > cp.mean_before
+
+
+def test_pettitt_on_noise_is_rarely_significant():
+    from app.stats.changepoint import pettitt
+
+    rng = np.random.default_rng(9)
+    years = list(range(1981, 2026))
+    hits = sum(pettitt(years, list(rng.normal(0, 1, 45))).p_value < 0.05 for _ in range(200))
+    assert hits <= 20  # ~5 % esperado; la aproximación es conservadora

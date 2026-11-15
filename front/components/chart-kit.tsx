@@ -3,7 +3,8 @@
 import { Alert, Badge, Button, Group, Loader, Stack, Table, Text, Title } from "@mantine/core";
 import type { ReactNode } from "react";
 import type { ApiError } from "@/lib/api";
-import type { Verdict } from "@/lib/types";
+import { pClause } from "@/lib/format";
+import type { Trend, Verdict } from "@/lib/types";
 
 /**
  * Colores de las gráficas: la paleta del proyecto (theme.ts) sobre el fondo #151722.
@@ -192,4 +193,16 @@ function errorTitle(error: ApiError): string {
   if (error.kind === "network") return "API unreachable";
   if (error.kind === "timeout") return "The API is taking too long";
   return "The request was rejected";
+}
+
+/** "Level shift in 2012": solo si Pettitt da p < 0.05. Una tendencia pareja también parece un salto. */
+export function ChangeNote({ trend, format }: { trend: Trend | null; format: (value: number) => string }) {
+  if (!trend || trend.change_year === null || trend.change_p_value === null || trend.change_p_value >= 0.05) return null;
+  return (
+    <Text size="xs">
+      Level shift from {trend.change_year}: average {format(trend.change_mean_before ?? 0)} before,{" "}
+      {format(trend.change_mean_after ?? 0)} after ({pClause("p", trend.change_p_value)}, Pettitt). A steady trend can
+      also look like a shift.
+    </Text>
+  );
 }

@@ -90,3 +90,20 @@ export function formatLat(lat: number): string {
 export function formatLon(lon: number): string {
   return `${Math.abs(lon).toFixed(2)}°${lon < 0 ? "W" : "E"}`;
 }
+
+/** "−2.9σ": anomalía en desviaciones estándar del período normal. */
+export function formatSigma(z: number | null): string {
+  if (z === null || !Number.isFinite(z)) return "n/a";
+  return `${formatFixed(z, 1).replace(/^(\d)/, "+$1")}σ`;
+}
+
+function ordinal(n: number): string {
+  const tens = n % 100;
+  if (tens >= 11 && tens <= 13) return `${n}th`;
+  return `${n}${({ 1: "st", 2: "nd", 3: "rd" } as Record<number, string>)[n % 10] ?? "th"}`;
+}
+
+/** "lowest of 45 years", "3rd highest of 23 years". */
+export function rankPhrase(rank: number, of: number, by: "lowest" | "highest"): string {
+  return `${rank === 1 ? "" : `${ordinal(rank)} `}${by} of ${of} years`;
+}

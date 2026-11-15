@@ -75,6 +75,25 @@ class TrendOut(BaseModel):
     ols_slope_per_decade: float = Field(description="Control: linear regression slope")
     ols_p_value: float = Field(description="Control: linear regression t-test p-value")
     notes: list[str] = Field(default_factory=list, description="Warnings when the methods disagree")
+    change_year: int | None = Field(None, description="First year of a new level (Pettitt test)")
+    change_p_value: float | None = Field(None, description="Pettitt p-value; show the change only if < 0.05")
+    change_mean_before: float | None = None
+    change_mean_after: float | None = None
+
+
+class BaselineOut(BaseModel):
+    start: int
+    end: int
+    mean: float
+    sd: float = Field(description="Sample standard deviation of the baseline years")
+
+
+class YearAnomaly(BaseModel):
+    year: int
+    anomaly: float = Field(description="Value minus the baseline mean, in the indicator unit")
+    z: float | None = Field(description="Anomaly in baseline standard deviations; null if the baseline is flat")
+    percent_of_normal: float | None = Field(description="Value as % of the baseline mean; null if the mean is not positive")
+    rank: int = Field(description="1 = most extreme year of the full record (driest, or most hotspots)")
 
 
 class DroughtIndicatorOut(IndicatorOut):
@@ -82,6 +101,10 @@ class DroughtIndicatorOut(IndicatorOut):
     trend: TrendOut | None
     points_to_drying: bool | None
     verdict: Verdict
+    baseline: BaselineOut | None = Field(None, description="Normal period for the anomalies")
+    anomalies: list[YearAnomaly] = Field(default_factory=list, description="One per year of the series")
+    rank_of: int = Field(0, description="Number of years in the full record used for the rank")
+    rank_by: Literal["lowest", "highest"] = Field("lowest", description="Rank 1 is the lowest or the highest value")
 
 
 class DroughtSummary(BaseModel):
@@ -111,6 +134,10 @@ class HotspotsResponse(BaseModel):
     trend: TrendOut | None
     percent_change: float | None = Field(None, description="Change over the period along the Sen line, in %")
     verdict: Verdict
+    baseline: BaselineOut | None = Field(None, description="Comparable record used as normal for the anomalies")
+    anomalies: list[YearAnomaly] = Field(default_factory=list, description="One per year of the series")
+    rank_of: int = Field(0, description="Number of years in the full record used for the rank")
+    rank_by: Literal["lowest", "highest"] = Field("lowest", description="Rank 1 is the lowest or the highest value")
 
 
 class HotspotCell(BaseModel):
@@ -144,4 +171,28 @@ class LinkResponse(BaseModel):
     p_value: float | None
     n_years: int
     method: str = "Spearman rank correlation"
+    caveat: str = "Relationship, not proof of cause."
+
+
+class LeadItem(BaseModel):
+    param: str
+    label: str
+    unit: str
+    rho: float | None
+    p_value: float | None
+    q_value: float | None = Field(None, description="p-value after FDR correction across the 6 indicators")
+    n_years: int
+    verdict: Verdict
+
+
+class LeadResponse(BaseModel):
+    """¿La época húmeda anterior (oct-mar) anticipa los focos de la época elegida?"""
+
+    region: RegionOut
+    season: SeasonOut
+    start: int
+    end: int
+    wet_months: list[int] = Field(description="Months of the previous wet season: Oct-Dec of the year before, Jan-Mar")
+    items: list[LeadItem]
+    method: str = "Spearman rank correlation, one fixed lag of one season, FDR across indicators"
     caveat: str = "Relationship, not proof of cause."

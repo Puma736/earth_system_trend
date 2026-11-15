@@ -9,17 +9,28 @@ import {
   LegendRow,
   PanelError,
   PanelHeader,
+  ChangeNote,
   TooltipCard,
   VerdictBadge,
 } from "@/components/chart-kit";
-import { formatCompact, formatCount, formatPercent, formatSigned, monthRange, pClause } from "@/lib/format";
-import type { HotspotsResponse } from "@/lib/types";
+import {
+  formatCompact,
+  formatCount,
+  formatPercent,
+  formatSigma,
+  formatSigned,
+  monthRange,
+  pClause,
+  rankPhrase,
+} from "@/lib/format";
+import type { HotspotsResponse, YearAnomaly } from "@/lib/types";
 import type { Resource } from "@/lib/use-resource";
 
 interface Row {
   year: number;
   hotspots: number;
   trend: number | null;
+  anomaly: YearAnomaly | null;
 }
 
 export function HotspotsPanel({
@@ -48,7 +59,7 @@ export function HotspotsPanel({
         {status === "loading" && data === null ? <Skeleton height={300} radius="md" /> : null}
         {data ? (
           <Stack gap="sm" className={status === "loading" ? "is-refreshing" : undefined}>
-            <HotspotsSummary data={data} />
+            <HotspotsSummary data={data} selectedYear={selectedYear} />
             <LegendRow
               items={[
                 { kind: "rect", color: CHART.bar, label: `Hotspots, ${monthRange(data.season.months)}` },
@@ -73,8 +84,11 @@ export function HotspotsPanel({
   );
 }
 
-function HotspotsSummary({ data }: { data: HotspotsResponse }) {
+function HotspotsSummary({ data, selectedYear }: { data: HotspotsResponse; selectedYear: number | null }) {
   const { trend } = data;
+  const focus =
+    (selectedYear !== null ? data.anomalies.find((item) => item.year === selectedYear) : undefined) ??
+    data.anomalies.at(-1);
   return (
     <div>
       <Group gap="sm" align="center" wrap="wrap">
@@ -99,6 +113,13 @@ function HotspotsSummary({ data }: { data: HotspotsResponse }) {
           Fewer than 10 years in this period, so there is no trend.
         </Text>
       )}
+      {focus && data.baseline ? (
+        <Text size="xs" mt={4}>
+          <strong>{focus.year}</strong>: {formatSigma(focus.z)} vs the {data.baseline.start}–{data.baseline.end} average
+          · {rankPhrase(focus.rank, data.rank_of, data.rank_by)}
+        </Text>
+      ) : null}
+      <ChangeNote trend={trend} format={formatCount} />
       {trend?.notes.map((note) => (
         <Text key={note} size="xs" className="method-note">
           {note}
@@ -115,6 +136,7 @@ function toRows(data: HotspotsResponse): Row[] {
     year: point.year,
     hotspots: point.value,
     trend: trend ? trend.intercept + (trend.slope_per_decade / 10) * (point.year - first) : null,
+    anomaly: data.anomalies.find((item) => item.year === point.year) ?? null,
   }));
 }
 
@@ -171,6 +193,12 @@ function HotspotsChart({
                     ...(row.trend === null
                       ? []
                       : [{ label: "trend line", value: formatCount(row.trend), color: CHART.accent }]),
+                    ...(row.anomaly
+                      ? [
+                          { label: "vs average", value: formatSigma(row.anomaly.z) },
+                          { label: `${data.rank_by} of ${data.rank_of} years`, value: `#${row.anomaly.rank}` },
+                        ]
+                      : []),
                   ]}
                 />
               );

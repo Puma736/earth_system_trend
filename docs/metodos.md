@@ -10,12 +10,12 @@ Regla del alcance: **no inventamos un índice con pesos**. Mostramos cada eviden
 |---|---|---|---|
 | Tendencias | Mann-Kendall | ✅ Usado, **con la corrección de Hamed-Rao** por autocorrelación | `backend/app/stats/trend.py` |
 | Tendencias | Pendiente de Sen | ✅ Usado, expresado por década | `trend.py` |
-| Tendencias | Regresión lineal | 🟡 Pendiente, **solo como control** (tarjeta B4) | — |
+| Tendencias | Regresión lineal | ✅ Usado, **solo como control** | `trend.py` |
 | Relaciones | Spearman | ✅ Usado en el puente sequía–focos | `trend.py`, `/api/link` |
 | Relaciones | Pearson | ❌ No: los focos no siguen una distribución normal y hay años extremos (2019, 2024) | — |
-| Relaciones | Correlación cruzada (con desfase) | 💡 Extra posible | — |
-| Anomalías | Z-score, desviación del promedio histórico | 💡 Propuesto para el caso guiado "Were 2019 and 2024 dry years?" | — |
-| Cambios | Puntos de cambio (CUSUM, PELT) | 💡 Extra posible | — |
+| Relaciones | Desfase de una temporada (época húmeda → focos) | ✅ Usado: un solo desfase fijado de antemano, Spearman + FDR | `/api/lead` |
+| Anomalías | Z-score, % de lo normal y puesto, frente a 1991–2020 | ✅ Usado | `stats/anomaly.py` |
+| Cambios | Año de cambio con la prueba de Pettitt (no CUSUM ni PELT) | ✅ Usado, se muestra solo si p < 0,05 | `stats/changepoint.py` |
 | Patrones | PCA, K-means | ❌ Fuera del MVP (decidido en ALCANCE-SEQUIA-FUEGO.md §6) | — |
 | Predicción | ARIMA, SARIMA, Prophet | ❌ Fuera del MVP: "tendencia no es pronóstico" | — |
 | Extensión | Kriging, Monte Carlo, GEV, FFT, clasificación | ❌ Fuera del alcance de la hackatón | — |
@@ -30,12 +30,13 @@ La guía describe el Mann-Kendall original. Nosotros usamos la **variante de Ham
 - **Por qué:** las series climáticas anuales tienen autocorrelación (un año seco suele seguir a otro seco). El Mann-Kendall original no la tiene en cuenta y da p-valores demasiado chicos, o sea, falsas "tendencias reales".
 - **Respaldo:** si la serie es plana o una recta perfecta, Hamed-Rao no se puede calcular. En ese caso usamos el Mann-Kendall original.
 - **Mínimo de datos:** 10 años. Con menos devolvemos `"Not enough data"`. Ojo: el ejemplo de la guía usa 5 meses, que con datos reales no alcanzan.
+- **Límite:** con mucha memoria entre años y solo unos 24 años, Hamed-Rao también da falsas tendencias (23–26 % en una simulación, en lugar del 5 % esperado). Detalle en [comparacion-algoritmos.md](comparacion-algoritmos.md).
 
 ### Pendiente de Sen
 
 Se calcula con la misma fórmula que la guía: la mediana de las pendientes entre todos los pares. La hace `scipy.stats.theilslopes` sobre los años reales, así que funciona aunque falte un año.
 - La multiplicamos por 10 para dar el **cambio por década**.
-- Pendiente (B4): el rango del 95 % que también devuelve `theilslopes`.
+- También mostramos el rango del 95 % que devuelve `theilslopes`.
 
 ### Spearman
 
@@ -56,3 +57,12 @@ Solo como control de Sen (`scipy.stats.linregress`). Si las dos dan direcciones 
 3. **Puntos de cambio (PELT, librería `ruptures`).** Fecha en qué año cambió el régimen de lluvia o de focos. Hay que presentarlo con cuidado: con 23 años de focos, un "quiebre" puede ser ruido.
 
 Lo que la guía lista en Patrones, Predicción y Extensión queda fuera: no lo pide el reto y no se puede validar bien en un fin de semana.
+
+## Lo que se agregó después de comparar con velaxd
+
+Detalle y razones en [comparacion-algoritmos.md](comparacion-algoritmos.md).
+
+- **Anomalías** (`/api/drought` y `/api/hotspots`, campos `baseline`, `anomalies`, `rank_of`, `rank_by`). Período normal fijo: 1991–2020 en la sequía (norma de la OMM) y 2003–2025 en los focos. El puesto se cuenta sobre todo el registro. Con datos reales, 2024 es el año más seco de 45 en 5 de los 6 indicadores de Santa Cruz (época seca).
+- **Desfase de una temporada** (`/api/lead`). Con datos reales de Santa Cruz no hay anticipación significativa (todos los q > 0,5): se muestra igual, porque un "no" también es un resultado.
+- **Aviso de autocorrelación.** Si la serie tiene menos de 30 años, sale significativa y la autocorrelación de los residuos supera 1,96/√n, `notes` avisa que el p puede ser demasiado optimista.
+- **Pettitt** (`change_year`, `change_p_value` en `trend`). Una tendencia pareja también produce un "cambio", así que el texto lo aclara.

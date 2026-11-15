@@ -56,3 +56,14 @@ def link(
         raise HTTPException(404, f"Unknown indicator. Options: {', '.join(power.DROUGHT_INDICATORS)}")
     check_years(start, end, firms.FIRST_YEAR, firms.LAST_YEAR)
     return services.link(region, season, indicator, start, end)
+
+
+@router.get("/lead", response_model=schemas.LeadResponse)
+def lead(
+    region: Region = Depends(get_region),
+    season: Season = Depends(get_season),
+    start: int = Query(firms.FIRST_COMPARABLE_YEAR),
+    end: int = Query(firms.LAST_YEAR),
+) -> schemas.LeadResponse:
+    check_years(start, end, firms.FIRST_YEAR, firms.LAST_YEAR)
+    return services.lead(region, season, start, end)

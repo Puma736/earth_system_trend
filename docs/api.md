@@ -223,6 +223,15 @@ El puente: sequía frente a focos, un punto por año. `indicator` es uno de los 
 - `indicator_unit` es la misma unidad que en `/api/regions`, para rotular el eje.
 - `rho` y `p_value` vienen en `null` si hay menos de 3 años en común.
 
+## Anomalías, año de cambio y `GET /api/lead`
+
+- `/api/drought` (por indicador) y `/api/hotspots` traen además:
+  - `baseline`: `{start, end, mean, sd}`. Sequía 1991–2020; focos 2003–2025.
+  - `anomalies`: uno por año de la serie, `{year, anomaly, z, percent_of_normal, rank}`. `rank` 1 es el año más extremo de **todo** el registro.
+  - `rank_of`: años del registro; `rank_by`: `"lowest"` (lluvia, suelo...) o `"highest"` (temperatura, focos).
+- `trend` trae `change_year`, `change_p_value`, `change_mean_before` y `change_mean_after` (prueba de Pettitt). Mostrarlo solo si `change_p_value < 0.05`.
+- `GET /api/lead?region=&season=&start=&end=`: para cada indicador, su promedio en la época húmeda que termina en marzo (oct del año anterior a mar) frente a los focos de la época elegida. Trae `items` con `{param, label, unit, rho, p_value, q_value, n_years, verdict}`; el veredicto usa el q-valor (FDR entre los 6).
+
 ---
 
 ## Pantalla `/investigation` (rama velaxd)

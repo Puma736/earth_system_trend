@@ -9,20 +9,39 @@ import {
   LegendRow,
   PanelError,
   PanelHeader,
+  ChangeNote,
   TooltipCard,
   VerdictBadge,
 } from "@/components/chart-kit";
-import { formatNumber, formatSigned, monthRange, pClause, unitLabel, withUnit } from "@/lib/format";
-import type { DroughtIndicator, DroughtResponse } from "@/lib/types";
+import {
+  formatCount,
+  formatNumber,
+  formatSigma,
+  formatSigned,
+  monthRange,
+  pClause,
+  rankPhrase,
+  unitLabel,
+  withUnit,
+} from "@/lib/format";
+import type { DroughtIndicator, DroughtResponse, YearAnomaly } from "@/lib/types";
 import type { Resource } from "@/lib/use-resource";
 
 interface Row {
   year: number;
   value: number;
   trend: number | null;
+  anomaly: YearAnomaly | null;
 }
 
-export function DroughtBoard({ resource }: { resource: Resource<DroughtResponse> }) {
+export function DroughtBoard({
+  resource,
+  selectedYear,
+}: {
+  resource: Resource<DroughtResponse>;
+  /** Año elegido en las barras de focos o en el mapa. Si no está en la serie, se usa el último. */
+  selectedYear: number | null;
+}) {
   const { data, status } = resource;
   return (
     <Paper p="md">
@@ -47,7 +66,7 @@ export function DroughtBoard({ resource }: { resource: Resource<DroughtResponse>
             />
             <SimpleGrid cols={{ base: 1, sm: 2, xl: 3 }} spacing="sm" verticalSpacing="sm">
               {data.indicators.map((indicator) => (
-                <IndicatorCard key={indicator.param} indicator={indicator} />
+                <IndicatorCard key={indicator.param} indicator={indicator} selectedYear={selectedYear} />
               ))}
             </SimpleGrid>
           </Stack>
@@ -96,8 +115,10 @@ function Summary({ data }: { data: DroughtResponse }) {
   );
 }
 
-function IndicatorCard({ indicator }: { indicator: DroughtIndicator }) {
+function IndicatorCard({ indicator, selectedYear }: { indicator: DroughtIndicator; selectedYear: number | null }) {
   const { trend, unit } = indicator;
+  const byYear = new Map(indicator.anomalies.map((item) => [item.year, item]));
+  const focus = (selectedYear !== null ? byYear.get(selectedYear) : undefined) ?? indicator.anomalies.at(-1);
   const first = indicator.series[0];
   const last = indicator.series[indicator.series.length - 1];
   const rows: Row[] = indicator.series.map((point) => ({
@@ -105,6 +126,7 @@ function IndicatorCard({ indicator }: { indicator: DroughtIndicator }) {
     value: point.value,
     // Recta de Sen: intercept es su valor en el primer año de la serie.
     trend: trend && first ? trend.intercept + (trend.slope_per_decade / 10) * (point.year - first.year) : null,
+    anomaly: byYear.get(point.year) ?? null,
   }));
 
   return (
@@ -139,7 +161,17 @@ function IndicatorCard({ indicator }: { indicator: DroughtIndicator }) {
           <Direction indicator={indicator} />
         </Text>
 
-        <IndicatorChart rows={rows} unit={unit} />
+        {focus && indicator.baseline ? (
+          <Text size="xs">
+            <strong>{focus.year}</strong>: {formatSigma(focus.z)} vs {indicator.baseline.start}–{indicator.baseline.end}
+            {isRain(indicator) && focus.percent_of_normal !== null
+              ? `, ${formatCount(focus.percent_of_normal)}% of normal`
+              : ""}{" "}
+            · {rankPhrase(focus.rank, indicator.rank_of, indicator.rank_by)}
+          </Text>
+        ) : null}
+
+        <IndicatorChart rows={rows} unit={unit} rankOf={indicator.rank_of} rankBy={indicator.rank_by} />
 
         {trend && first && last ? (
           <Text size="xs">
@@ -149,18 +181,30 @@ function IndicatorCard({ indicator }: { indicator: DroughtIndicator }) {
         <Text size="xs" c="dimmed">
           {indicator.definition} Unit: {unitLabel(unit)}.
         </Text>
+        <ChangeNote trend={trend} format={(value) => withUnit(formatNumber(value), unit)} />
         {trend?.notes.map((note) => (
           <Text key={note} size="xs" className="method-note">
             {note}
           </Text>
         ))}
         <DataTable
-          head={["Year", `Value (${unitLabel(unit)})`, "Trend line"]}
-          rows={rows.map((row) => [row.year, formatNumber(row.value), row.trend === null ? "" : formatNumber(row.trend)])}
+          head={["Year", `Value (${unitLabel(unit)})`, "Trend line", "Anomaly", "Rank"]}
+          rows={rows.map((row) => [
+            row.year,
+            formatNumber(row.value),
+            row.trend === null ? "" : formatNumber(row.trend),
+            row.anomaly ? formatSigma(row.anomaly.z) : "",
+            row.anomaly ? `${row.anomaly.rank} / ${indicator.rank_of}` : "",
+          ])}
         />
       </Stack>
     </Box>
   );
+}
+
+/** En la lluvia, "% de lo normal" se entiende mejor que las desviaciones estándar. */
+function isRain(indicator: DroughtIndicator): boolean {
+  return indicator.param === "PRECTOTCORR";
 }
 
 function Direction({ indicator }: { indicator: DroughtIndicator }) {
@@ -176,7 +220,17 @@ function Direction({ indicator }: { indicator: DroughtIndicator }) {
   );
 }
 
-function IndicatorChart({ rows, unit }: { rows: Row[]; unit: string }) {
+function IndicatorChart({
+  rows,
+  unit,
+  rankOf,
+  rankBy,
+}: {
+  rows: Row[];
+  unit: string;
+  rankOf: number;
+  rankBy: "lowest" | "highest";
+}) {
   const first = rows[0]?.year ?? 0;
   const last = rows[rows.length - 1]?.year ?? 0;
   const decades = rows.map((row) => row.year).filter((year) => year % 10 === 0);
@@ -220,6 +274,12 @@ function IndicatorChart({ rows, unit }: { rows: Row[]; unit: string }) {
                     ...(row.trend === null
                       ? []
                       : [{ label: "trend line", value: withUnit(formatNumber(row.trend), unit), color: CHART.accent }]),
+                    ...(row.anomaly
+                      ? [
+                          { label: "vs normal", value: formatSigma(row.anomaly.z) },
+                          { label: `${rankBy} of ${rankOf} years`, value: `#${row.anomaly.rank}` },
+                        ]
+                      : []),
                   ]}
                 />
               );

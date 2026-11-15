@@ -6,6 +6,7 @@
 |---|---|
 | [docs/api.md](docs/api.md) | Contrato de la API (lo que recibe el frontend) |
 | [docs/metodos.md](docs/metodos.md) | Métodos estadísticos que usamos y cuáles quedan fuera |
+| [docs/comparacion-algoritmos.md](docs/comparacion-algoritmos.md) | Algoritmos del tablero frente a los de la rama velaxd: iguales, similares y faltantes |
 | [docs/fuentes.md](docs/fuentes.md) | Enlaces de FIRMS, POWER y Giovanni |
 | [docs/propuesta-condiciones-fuego.md](docs/propuesta-condiciones-fuego.md) | Propuesta (no aprobada): detector de condiciones favorables para incendios |
 
@@ -122,6 +123,7 @@ El formato completo de cada respuesta, con ejemplos, está en [docs/api.md](docs
 | `GET /api/hotspots?region=&season=&start=&end=` | Focos por año con tendencia y % de cambio | FIRMS (MODIS) |
 | `GET /api/hotspots/grid?year=&region=&season=` | Focos por celda de 0,5° de un año, para el mapa | FIRMS (MODIS) |
 | `GET /api/link?region=&season=&indicator=&start=&end=` | Sequía frente a focos por año, con Spearman | POWER + FIRMS |
+| `GET /api/lead?region=&season=&start=&end=` | ¿La época húmeda anterior (oct–mar) anticipa los focos? Spearman con FDR | POWER + FIRMS |
 | `GET /catalog` | Regiones, variables y preguntas de `/investigation` | — |
 | `POST /investigations` | Series, pruebas, mapa y conclusión de `/investigation` | **Simulada** (`investigate.py`) |
 
@@ -154,7 +156,9 @@ backend/app/
   api/             rutas
   data/power.py    MERRA-2 vía POWER, con caché
   data/firms.py    lee el CSV agregado de FIRMS
-  stats/trend.py   Hamed-Rao, Sen, FDR y Spearman
+  stats/trend.py   Hamed-Rao, Sen, FDR, Spearman y aviso de autocorrelación
+  stats/anomaly.py anomalía y puesto de cada año frente a lo normal
+  stats/changepoint.py  año de cambio (Pettitt)
 backend/scripts/download_firms.py
 backend/tests/
 ```
